@@ -4,6 +4,11 @@ Desenho de solução do que o repositório **realmente provisiona**: cluster
 **Kind** via Terraform ([`infra/`](../../infra)) e workloads nos manifestos
 [`k8s/`](../../k8s). Usado localmente e no pipeline de CD.
 
+**Runtime no cluster:** MongoDB, Job de migrations e API rodam **somente**
+como pods/workloads no namespace `tech-challenge-namespace`. Não há Compose,
+Mongo no host nem API fora do Kind nesta fase. Docker no host apenas executa
+os nós do Kind e carrega imagens.
+
 ## Visão da solução
 
 ```mermaid
@@ -57,7 +62,9 @@ flowchart TB
 | Namespace | `kubernetes_namespace.app` | Namespace da aplicação |
 | metrics-server | `kubectl_manifest.metrics_server` | Métricas para o HPA |
 
-MongoDB, API, Job e HPA **não** são criados pelo Terraform — só via `kubectl apply` dos YAMLs em `k8s/`.
+MongoDB, API, Job e HPA **não** são criados pelo Terraform — só via
+`kubectl apply` dos YAMLs em `k8s/`. Mesmo assim, **todos rodam no Kubernetes**
+(não há banco ou API fora do cluster nesta fase).
 
 ## Workloads (`k8s/`)
 

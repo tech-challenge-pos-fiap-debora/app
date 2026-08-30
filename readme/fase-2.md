@@ -1,16 +1,28 @@
 # Fase 2 — Infraestrutura e Deploy em Kubernetes
 
-Esta fase leva a aplicação da Fase 1 para um cluster **Kubernetes**, com
-infraestrutura provisionada por **Terraform**, imagens **Docker** multi-stage,
-**Job de migrations**, **Deployment** da API, **HorizontalPodAutoscaler (HPA)**,
-health checks e pipeline **CI/CD** no GitHub Actions.
+Deploy da aplicação em um cluster **Kubernetes** local (**Kind**), com
+infraestrutura do cluster via **Terraform**, imagens multi-stage, **MongoDB**,
+**Job de migrations**, **Deployment** da API, **HPA**, health checks e
+pipeline **CI/CD** no GitHub Actions.
 
-O cluster é criado com **Kind** (Kubernetes IN Docker) via Terraform
-([`infra/`](../infra)), e os workloads são aplicados pelos manifestos de
-[`k8s/`](../k8s). Ver o [diagrama de infraestrutura](../docs/diagrams/infra-kind-k8s.md).
+## Regra desta fase
 
-> Para a documentação da aplicação (como rodar localmente, APIs, MongoDB), veja
-> [`fase-1.md`](fase-1.md).
+**Nenhum workload da aplicação pode rodar fora do Kubernetes.**
+
+| Permitido no cluster (`k8s/`) | Fora do cluster (proibido nesta fase) |
+|-------------------------------|----------------------------------------|
+| Pod MongoDB | Docker Compose com `api` / `mongo` |
+| Job de migrations | `yarn start` / Mongo na máquina local |
+| Pods da API (+ HPA) | Qualquer outro processo servindo a API/banco |
+
+Docker no host **não** é o ambiente da aplicação: ele só executa os nós do Kind
+e empacota as imagens (`docker build` → `kind load`). A API e o Mongo sobem
+**somente** como pods no namespace `tech-challenge-namespace`.
+Ver o [diagrama de infraestrutura](../docs/diagrams/infra-kind-k8s.md).
+
+> Em cloud (ex.: AWS) o Terraform cria o cluster e um banco gerenciado. No Kind
+> não há DocumentDB/RDS: o banco é o Deployment Mongo **dentro** do cluster
+> (`k8s/mongo-*.yaml`), junto com a API — ainda assim, tudo no Kubernetes.
 
 ---
 
@@ -50,30 +62,34 @@ O cluster é criado com **Kind** (Kubernetes IN Docker) via Terraform
 
 ## Pré-requisitos
 
-- [Docker](https://docs.docker.com/get-docker/) em execução
+Ferramentas de **provisionamento e empacotamento** no host (não executam a API/Mongo):
+
+- [Docker](https://docs.docker.com/get-docker/) — nós do Kind + `docker build`
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.5
 - [kubectl](https://kubernetes.io/docs/tasks/tools/)
 - [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
-- Node.js (ver [`.nvmrc`](../.nvmrc)) e Yarn — para build/testes locais
+- Node.js (ver [`.nvmrc`](../.nvmrc)) e Yarn — gate de testes unitários / `yarn build` das imagens
 
 ---
 
 ## Passo a passo
 
-### 1. Build e testes locais (gate de qualidade)
+### 1. Gate de qualidade (antes do deploy)
+
+Somente testes **unitários** e build no host — **sem** subir API/Mongo fora do
+cluster. Integração com Mongo fica no CI ou validada pelo smoke test **depois**
+do deploy no Kind.
 
 ```bash
 yarn install --frozen-lockfile
-yarn test                 # testes unitários + cobertura
-yarn test:unit:docker     # mesma suíte unitária, dentro do container da API (sem Mongo)
-yarn test:integration     # integração (requer MongoDB); ou:
-yarn test:integration:docker
+yarn test                 # unitários + cobertura (sem Mongo)
 yarn build
 ```
 
-### 2. Build das imagens Docker
+### 2. Build das imagens (empacotar para o cluster)
 
-O `Dockerfile` é multi-stage. Para o deploy no cluster são usadas duas imagens:
+O `Dockerfile` é multi-stage. As imagens **não** sobem a API no host; só entram
+no Kind no passo 4:
 
 ```bash
 # Imagem de produção da API
@@ -123,7 +139,10 @@ kubectl apply -f k8s/secret.yaml
 > **Segredos:** ajuste `k8s/secret.yaml` com valores reais (por exemplo `JWT_SECRET`
 > e `SEED_ADMIN_PASSWORD`) antes de aplicar. Não versione segredos de produção.
 
-### 6. Subir o MongoDB
+### 6. Subir o MongoDB (no cluster)
+
+Deployment + Service + PVC **dentro** do Kind — o banco roda como pod
+Kubernetes, não como container à parte no Docker Compose.
 
 ```bash
 kubectl apply -f k8s/mongo-pvc.yaml
@@ -175,22 +194,22 @@ terraform destroy -auto-approve
 
 ## CI/CD (GitHub Actions)
 
-O pipeline automatiza todo o fluxo acima. Veja o
+O pipeline automatiza o fluxo. Veja o
 [diagrama de CI/CD](../docs/diagrams/cicd-deploy.md).
 
-- **CI** ([`ci.yml`](../.github/workflows/ci.yml)): a cada `push`/`pull_request`,
-  roda `yarn test`, `yarn test:integration` (com serviço MongoDB) e `yarn build`.
+- **CI** ([`ci.yml`](../.github/workflows/ci.yml)): gate de qualidade no runner
+  (`yarn test`, `yarn test:integration`, `yarn build`). O Mongo do *service*
+  do Actions existe **só para os testes do pipeline** — não é o runtime da
+  aplicação nem substitui o deploy no Kind.
 - **CD** ([`cd.yml`](../.github/workflows/cd.yml)): em `push` para
   `main`/`master`/`fase-02` (ou manual), executa:
   1. **Testes + build** (gate do deploy);
   2. **Build das imagens** Docker (`production` e `migrations`) salvas como artefatos;
-  3. **Deploy**: `terraform apply` (Kind), carrega imagens, aplica config, sobe o
-     Mongo, roda as migrations, faz o deploy da API + HPA e executa **smoke test**
-     em `/health/live` e `/health/ready`. Ao final, com `if: always()`, o workflow
-     roda `terraform destroy` e derruba o cluster Kind (sucesso ou falha). O
-     runner do GitHub Actions é efêmero: esse cluster existe só durante o job; a
-     validação do CD é o smoke test. Para demos ou inspeção prolongada, use o
-     Kind local (`infra/` + passos manuais desta página).
+  3. **Deploy no Kind**: `terraform apply`, carrega imagens, aplica `k8s/`
+     (Mongo + migrations + API + HPA) e **smoke test** em `/health/live` e
+     `/health/ready`. Aqui a aplicação e o banco rodam **apenas** como pods no
+     cluster. Ao final, com `if: always()`, o workflow roda `terraform destroy`.
+     O runner é efêmero; para demos use o Kind local (`infra/` + esta página).
 
 ---
 
