@@ -17,7 +17,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:integration": "jest --config ./test/jest-integration.json",
+    "test:integration": "NEW_RELIC_ENABLED=false jest --config ./test/jest-integration.json",
     "test:integration:docker": "sh -c 'docker compose up -d mongo || exit 1; yarn test:integration; ec=$?; docker compose stop mongo; exit $ec'",
     "test:unit:docker": "docker compose run --rm --no-deps api yarn test",
     "migrate:up": "migrate-mongo up",

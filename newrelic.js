@@ -9,8 +9,12 @@ exports.config = {
   app_name: [process.env.NEW_RELIC_APP_NAME || 'tech-challenge-api'],
   license_key: process.env.NEW_RELIC_LICENSE_KEY,
 
-  // Permite subir a aplicação sem telemetria em ambiente local e nos testes.
-  agent_enabled: process.env.NEW_RELIC_ENABLED !== 'false',
+  // Sem license key o agente não sobe: em local e nos testes isso evita o
+  // crash do addon nativo (segfault) quando o pacote é importado sem propósito.
+  agent_enabled:
+    Boolean(process.env.NEW_RELIC_LICENSE_KEY) &&
+    process.env.NEW_RELIC_ENABLED !== 'false',
+
 
   distributed_tracing: {
     enabled: true,
