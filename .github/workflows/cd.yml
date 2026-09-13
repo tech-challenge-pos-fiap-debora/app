@@ -1,8 +1,10 @@
 name: CD
 
+# Pipeline da fase 2: provisiona um cluster Kind dentro do runner, faz o deploy,
+# testa e destroi. Foi substituido pelo deploy real na AWS, feito pelo
+# publish-ecr.yml deste repositorio junto com o Deploy Prod do infra-kubernetes.
+# Fica apenas manual para nao competir com aquele fluxo a cada push na main.
 on:
-  push:
-    branches: [main, master, fase-02]
   workflow_dispatch:
 
 concurrency:
@@ -27,8 +29,6 @@ jobs:
         image: mongo:7
         ports:
           - 27017:27017
-    env:
-      MONGO_URL: mongodb://127.0.0.1:27017/tech-challenge-integration
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5

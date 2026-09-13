@@ -71,7 +71,7 @@ WORKDIR /usr/src/app
 
 ENV NODE_ENV=production
 
-COPY --chown=node:node package.json yarn.lock ./
+COPY --chown=node:node package.json yarn.lock newrelic.js ./
 
 COPY --chown=node:node --from=prod-deps /usr/src/app/node_modules ./node_modules
 COPY --chown=node:node --from=build /usr/src/app/dist ./dist
@@ -80,4 +80,5 @@ USER node
 
 EXPOSE 3000
 
-CMD ["node", "dist/main.js"]
+# O agente precisa ser carregado antes da aplicação para instrumentar http e mongodb.
+CMD ["node", "-r", "newrelic", "dist/main.js"]

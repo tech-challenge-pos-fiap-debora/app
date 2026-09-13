@@ -59,6 +59,16 @@ export type StatusHistoryEntry = {
   at: Date;
 };
 
+export type ServiceOrderDomainEvent = {
+  type: 'ServiceOrderOpened' | 'ServiceOrderStatusChanged';
+  serviceOrderId: string;
+  status: ServiceOrderStatus;
+  previousStatus: ServiceOrderStatus | null;
+  /** Quanto tempo a ordem permaneceu no status anterior, em milissegundos. */
+  previousStatusDurationMs: number | null;
+  occurredAt: Date;
+};
+
 export type ServiceOrderClientSnapshot = {
   id: string;
   document: DocumentVO;
@@ -112,15 +122,26 @@ export type CreateServiceOrderInput = {
 export class ServiceOrder {
   public readonly id: string;
   private props: ServiceOrderProps;
+  private pendingEvents: ServiceOrderDomainEvent[] = [];
 
   private constructor(props: ServiceOrderProps, id?: string) {
     this.id = id || randomUUID();
     this.props = props;
   }
 
+  /**
+   * Devolve e limpa os eventos acumulados desde a última leitura. Consumido na
+   * persistência, para que a telemetria só registre transições efetivadas.
+   */
+  pullDomainEvents(): ServiceOrderDomainEvent[] {
+    const events = this.pendingEvents;
+    this.pendingEvents = [];
+    return events;
+  }
+
   static create(input: CreateServiceOrderInput, id?: string): ServiceOrder {
     const now = new Date();
-    return new ServiceOrder(
+    const order = new ServiceOrder(
       {
         status: ServiceOrderStatus.RECEIVED,
         client: {
@@ -150,6 +171,17 @@ export class ServiceOrder {
       },
       id,
     );
+
+    order.pendingEvents.push({
+      type: 'ServiceOrderOpened',
+      serviceOrderId: order.id,
+      status: ServiceOrderStatus.RECEIVED,
+      previousStatus: null,
+      previousStatusDurationMs: null,
+      occurredAt: now,
+    });
+
+    return order;
   }
 
   static restore(props: ServiceOrderProps, id: string): ServiceOrder {
@@ -239,9 +271,23 @@ export class ServiceOrder {
 
   private transitionTo(next: ServiceOrderStatus): void {
     const at = new Date();
-    this.props.statusHistory.push({ from: this.props.status, to: next, at });
+    const previous = this.props.status;
+    const enteredPreviousAt = this.props.statusHistory.at(-1)?.at;
+
+    this.props.statusHistory.push({ from: previous, to: next, at });
     this.props.status = next;
     this.props.updatedAt = at;
+
+    this.pendingEvents.push({
+      type: 'ServiceOrderStatusChanged',
+      serviceOrderId: this.id,
+      status: next,
+      previousStatus: previous,
+      previousStatusDurationMs: enteredPreviousAt
+        ? at.getTime() - enteredPreviousAt.getTime()
+        : null,
+      occurredAt: at,
+    });
   }
 
   private assertEditable(): void {
