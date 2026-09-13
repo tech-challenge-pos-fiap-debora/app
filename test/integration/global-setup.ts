@@ -1,9 +1,8 @@
 import mongoose from 'mongoose';
-import { resolveIntegrationMongoUrl } from './helpers/mongo-url';
+import { INTEGRATION_MONGO_URL } from './helpers/mongo-url';
 
 export default async function globalSetup(): Promise<void> {
-  const uri = resolveIntegrationMongoUrl();
-  await mongoose.connect(uri);
+  await mongoose.connect(INTEGRATION_MONGO_URL);
   await mongoose.connection.dropDatabase();
   await mongoose.disconnect();
 }

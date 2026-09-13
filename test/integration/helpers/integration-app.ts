@@ -11,10 +11,12 @@ import {
   INTEGRATION_JWT_SECRET,
 } from '../dev-credentials.fixture';
 import { integrationAdminCredentials } from '../mocks/auth.mock';
-import { resolveIntegrationMongoUrl } from './mongo-url';
+import { INTEGRATION_MONGO_URL } from './mongo-url';
 
 export async function bootstrapIntegrationApp(): Promise<INestApplication> {
-  process.env.MONGO_URL = resolveIntegrationMongoUrl();
+  // Sobrescreve MONGO_URL para a aplicação sob teste não usar o banco real caso
+  // a variável esteja definida no ambiente de quem roda a suíte.
+  process.env.MONGO_URL = INTEGRATION_MONGO_URL;
   process.env.JWT_SECRET = INTEGRATION_JWT_SECRET;
   process.env.JWT_EXPIRES_IN = '1d';
   process.env.SEED_ADMIN_EMAIL = INTEGRATION_ADMIN_EMAIL;
