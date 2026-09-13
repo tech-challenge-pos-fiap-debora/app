@@ -6,8 +6,10 @@ import { JwtService } from '@nestjs/jwt';
 import { randomBytes } from 'node:crypto';
 import { describe, expect, it } from '@jest/globals';
 import * as bcrypt from 'bcrypt';
+import { Client } from '../../../domain/entities/client';
 import { User } from '../../../domain/entities/user';
 import { UserRole } from '../../../domain/entities/user-role';
+import type { ClientRepositoryInterface } from '../../../domain/repositories/client.repository';
 import type { UserRepositoryInterface } from '../../../domain/repositories/user.repository';
 import { CreateUserUseCase } from './create-user';
 import { LoginUseCase } from './login';
@@ -30,6 +32,39 @@ class InMemoryUserRepository implements UserRepositoryInterface {
 
   async findById(id: string): Promise<User | null> {
     return this.byId.get(id) ?? null;
+  }
+}
+
+class InMemoryClientRepository implements ClientRepositoryInterface {
+  private readonly byId = new Map<string, Client>();
+
+  async create(data: Client): Promise<Client> {
+    this.byId.set(data.id, data);
+    return data;
+  }
+
+  async find(): Promise<Client[]> {
+    return [...this.byId.values()];
+  }
+
+  async findById(id: string): Promise<Client | null> {
+    return this.byId.get(id) ?? null;
+  }
+
+  async findByDocument(document: string): Promise<Client> {
+    const found = [...this.byId.values()].find((c) => c.document === document);
+    if (!found) {
+      throw new Error('not found');
+    }
+    return found;
+  }
+
+  async updateByDocument(): Promise<Client> {
+    throw new Error('not implemented');
+  }
+
+  async remove(): Promise<void> {
+    throw new Error('not implemented');
   }
 }
 
@@ -131,6 +166,7 @@ describe('Auth use cases', () => {
 
   it('validate-user rejects inactive user', async () => {
     const repo = new InMemoryUserRepository();
+    const clients = new InMemoryClientRepository();
     const user = User.create({
       name: 'X',
       email: 'x@test.com',
@@ -140,7 +176,7 @@ describe('Auth use cases', () => {
     });
     await repo.create(user);
 
-    const useCase = new ValidateUserUseCase(repo);
+    const useCase = new ValidateUserUseCase(repo, clients);
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -154,6 +190,7 @@ describe('Auth use cases', () => {
 
   it('validate-user returns authenticated shape when active', async () => {
     const repo = new InMemoryUserRepository();
+    const clients = new InMemoryClientRepository();
     const user = User.create({
       name: 'X',
       email: 'x@test.com',
@@ -163,7 +200,7 @@ describe('Auth use cases', () => {
     });
     await repo.create(user);
 
-    const useCase = new ValidateUserUseCase(repo);
+    const useCase = new ValidateUserUseCase(repo, clients);
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -174,6 +211,30 @@ describe('Auth use cases', () => {
       sub: user.id,
       email: user.email,
       role: UserRole.MECANICO,
+    });
+  });
+
+  it('validate-user accepts JWT de cliente existente', async () => {
+    const repo = new InMemoryUserRepository();
+    const clients = new InMemoryClientRepository();
+    const client = Client.create({
+      name: 'João',
+      document: '52998224725',
+      email: 'joao@test.com',
+    });
+    await clients.create(client);
+
+    const useCase = new ValidateUserUseCase(repo, clients);
+    const payload: JwtPayload = {
+      sub: client.id,
+      email: client.email,
+      role: UserRole.CLIENTE,
+    };
+
+    await expect(useCase.execute(payload)).resolves.toEqual({
+      sub: client.id,
+      email: client.email,
+      role: UserRole.CLIENTE,
     });
   });
 });
