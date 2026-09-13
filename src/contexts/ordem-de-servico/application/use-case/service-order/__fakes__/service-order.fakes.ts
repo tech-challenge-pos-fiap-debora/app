@@ -54,9 +54,7 @@ export const TEST_PLATE = 'MVO9884';
 export const TEST_CATALOG_ID = 'catalog-1';
 export const TEST_PRODUCT_CODE = 'OIL001';
 
-export class InMemoryServiceOrderRepository
-  implements ServiceOrderRepositoryInterface
-{
+export class InMemoryServiceOrderRepository implements ServiceOrderRepositoryInterface {
   private readonly orders = new Map<string, ServiceOrder>();
 
   create(order: ServiceOrder): Promise<ServiceOrder> {
@@ -81,9 +79,7 @@ export class InMemoryServiceOrderRepository
     plate?: string,
   ): Promise<ServiceOrder[]> {
     const normalizedDocument = document.replace(/\D/g, '');
-    const normalizedPlate = plate
-      ?.replace(/[^A-Za-z0-9]/g, '')
-      .toUpperCase();
+    const normalizedPlate = plate?.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
 
     return Promise.resolve(
       [...this.orders.values()].filter((order) => {
@@ -124,9 +120,7 @@ export class InMemoryServiceOrderRepository
   }
 }
 
-export class InMemoryCatalogServiceRepository
-  implements CatalogServiceRepositoryInterface
-{
+export class InMemoryCatalogServiceRepository implements CatalogServiceRepositoryInterface {
   private readonly catalog = new Map<string, CatalogService>();
 
   create(data: CatalogService): Promise<CatalogService> {
@@ -272,9 +266,7 @@ export class InMemoryStockService implements StockServicePort {
     private readonly quotes: StockQuoteItem[] = [],
   ) {}
 
-  getAvailability(
-    demand: StockDemandItem[],
-  ): Promise<StockAvailabilityItem[]> {
+  getAvailability(demand: StockDemandItem[]): Promise<StockAvailabilityItem[]> {
     const byCode = new Map(
       this.availability.map((item) => [item.productCode, item]),
     );
@@ -367,9 +359,7 @@ const baseOrderProps = (
     },
     serviceLines: [],
     partLines: [],
-    statusHistory: [
-      { from: null, to: ServiceOrderStatus.RECEIVED, at: now },
-    ],
+    statusHistory: [{ from: null, to: ServiceOrderStatus.RECEIVED, at: now }],
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -422,9 +412,7 @@ export const createDiagnosedOrderWithService = (
   return order;
 };
 
-export const createWaitingApprovalOrder = (
-  id = 'os-waiting',
-): ServiceOrder => {
+export const createWaitingApprovalOrder = (id = 'os-waiting'): ServiceOrder => {
   const order = createDiagnosedOrderWithService(id);
   const budget: Budget = {
     items: [
