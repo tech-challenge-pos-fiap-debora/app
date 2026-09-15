@@ -12,7 +12,7 @@
 
 ## 1. Resumo
 
-O cliente autentica-se com o CPF em `POST /auth/login` no API Gateway. Uma Lambda valida o documento, consulta existência e status na collection `client` e devolve um JWT. A API NestJS no EKS aceita esse token nas rotas protegidas, com o mesmo `JWT_SECRET`.
+O cliente autentica-se com o CPF em `POST /auth/login` no API Gateway. Uma Lambda valida o documento, consulta existência e status na tabela `client` do RDS PostgreSQL e devolve um JWT. A API NestJS no EKS aceita esse token nas rotas protegidas, com o mesmo `JWT_SECRET`.
 
 ## 2. Motivação
 
@@ -30,9 +30,9 @@ Havia três caminhos possíveis: Cognito, authorizer no API Gateway na frente de
 
 1. Cliente envia `{ "cpf": "..." }` para o API Gateway.
 2. A Lambda normaliza os dígitos e valida o CPF (`cpf-cnpj-validator`).
-3. Consulta `client` por `document`.
+3. Consulta a tabela `client` por `document`.
 4. Recusa se não existir (`401`) ou se `status !== ACTIVE` (`403`).
-5. Assina JWT com `sub` = `_id`, `email`, `role: "cliente"` e o `JWT_SECRET` compartilhado.
+5. Assina JWT com `sub` = `id` (UUID), `email`, `role: "cliente"` e o `JWT_SECRET` compartilhado.
 6. A API valida o Bearer com Passport JWT e `ValidateUserUseCase`: se a role é `cliente`, recarrega o cadastro e recusa inativo ou inexistente.
 
 ### 4.2 Fluxo interno
@@ -63,7 +63,7 @@ Já existia infraestrutura JWT. Não cumpriria “function serverless” nem o r
 
 ## 6. Decisão
 
-Lambda + API Gateway só no login; JWT HS256 com secret compartilhado; status `ACTIVE`/`INACTIVE` na collection `client`; validação repetida na API.
+Lambda + API Gateway só no login; JWT HS256 com secret compartilhado; status `ACTIVE`/`INACTIVE` na tabela `client`; validação repetida na API.
 
 ## 7. Consequências
 

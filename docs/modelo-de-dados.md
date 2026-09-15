@@ -12,7 +12,6 @@ RDS PostgreSQL 16, instância `tech-challenge-prod-pg`, provisionada pelo reposi
 
 ```mermaid
 erDiagram
-    USER ||--o{ USER : "autentica equipe"
     CLIENT ||--o{ SERVICE_ORDER : "client_id"
     VEHICLE ||--o{ SERVICE_ORDER : "vehicle_id"
     CATALOG_SERVICE ||--o{ CATALOG_SERVICE_DEFAULT_PART : "tem"
@@ -99,7 +98,38 @@ erDiagram
         string name
         int quantity
     }
+
+    SERVICE_ORDER_BUDGET {
+        uuid id PK
+        uuid service_order_id FK
+        numeric total
+        boolean approved
+    }
+
+    SERVICE_ORDER_BUDGET_ITEM {
+        uuid id PK
+        uuid budget_id FK
+        string description
+        numeric amount
+    }
+
+    SERVICE_ORDER_STATUS_HISTORY {
+        uuid id PK
+        uuid service_order_id FK
+        string from_status
+        string to_status
+        timestamp changed_at
+    }
+
+    CATALOG_SERVICE_DEFAULT_PART {
+        uuid id PK
+        uuid catalog_service_id FK
+        string product_code
+        int quantity
+    }
 ```
+
+`user` não tem FK para as demais tabelas: autentica a equipe, não participa do agregado da OS.
 
 ## 4. Tabelas e responsabilidades
 
@@ -164,11 +194,11 @@ Status: `RECEIVED`, `IN_DIAGNOSIS`, `WAITING_APPROVAL`, `IN_EXECUTION`, `FINISHE
 4. **Referência por código** nas peças da OS.
 5. **Health checks** do kubelet filtrados no Pino (volume New Relic).
 
-## 8. Checklist de adaptação (código)
+## 8. O que foi implementado
 
-| Área | Pendência |
+| Área | Situação |
 |---|---|
-| `app` | TypeORM/Prisma + `pg`; repositórios SQL; migrations SQL; testes; `DATABASE_URL` |
-| `lambda-auth` | driver `pg`; `DATABASE_URL`; `SELECT` em `client` |
+| `app` | TypeORM + `pg`; repositórios SQL; migrations SQL; testes; `DATABASE_URL` |
+| `lambda-auth` | driver `pg` no bundle; `DATABASE_URL`; `SELECT` em `client` |
 | `infra-kubernetes` | secret `DATABASE_URL`; Terraform e workflows |
 | Documentação | este arquivo, RFC-002, diagramas, READMEs, RUNBOOK |

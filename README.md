@@ -86,9 +86,19 @@ flowchart LR
 
 Visão de nuvem: [`docs/diagrams/componentes-nuvem.md`](docs/diagrams/componentes-nuvem.md).
 
+## Deploys ativos (produção)
+
+| O quê | URL |
+|---|---|
+| API | http://k8s-techchal-api-3be88fc582-917637512.us-east-1.elb.amazonaws.com |
+| Swagger | http://k8s-techchal-api-3be88fc582-917637512.us-east-1.elb.amazonaws.com/api |
+| Health | http://k8s-techchal-api-3be88fc582-917637512.us-east-1.elb.amazonaws.com/health/live |
+| Login cliente (API Gateway) | `POST` https://b831ifscuh.execute-api.us-east-1.amazonaws.com/prod/auth/login |
+| New Relic | https://one.newrelic.com/redirect/entity/ODUwODAzNnxWSVp8REFTSEJPQVJEfGRhOjEzMTY1ODM5 |
+
 ## APIs
 
-- Swagger: http://localhost:3000/api (local) ou `https://<alb>/api` depois do deploy
+- Swagger: http://localhost:3000/api (local) ou o ALB acima
 - OpenAPI JSON: http://localhost:3000/api-json
 - Login de equipe: `POST /auth/login` `{ "email", "password" }`
 - Login de cliente: API Gateway do `lambda-auth`, depois Bearer nas rotas com `@AuthRoles`
@@ -98,9 +108,8 @@ Roteiros: [`docs/api-fluxo-fase-2-endpoints.md`](docs/api-fluxo-fase-2-endpoints
 
 ## Vídeo demonstrativo
 
-Demonstra deploy da aplicação, execução do CI/CD, consumo das APIs e escalabilidade automática (HPA).
-
-- **Link (Google Drive):** [Fase 2 — vídeo demonstrativo](https://drive.google.com/drive/folders/1lh3C0epIgxDlT67pXlC3IdDHHwV4oc2z?usp=sharing)
+- **Fase 3** (entrega do portal): autenticação por CPF, CI/CD, APIs protegidas, dashboard New Relic, logs e traces. O link do YouTube/Vimeo entra no PDF.
+- **Fase 2** (histórico Kind/HPA): [Google Drive](https://drive.google.com/drive/folders/1lh3C0epIgxDlT67pXlC3IdDHHwV4oc2z?usp=sharing)
 
 ## Outros documentos
 

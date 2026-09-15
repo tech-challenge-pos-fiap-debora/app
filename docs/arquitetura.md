@@ -33,14 +33,26 @@
 
 O detalhe de agents, NRQL e alertas fica no repositório `infra-kubernetes`, arquivo `docs/OBSERVABILIDADE.md`.
 
-## 5. Adaptação para RDS — checklist
+## 5. Deploys ativos (produção)
 
-| Repositório | O que falta |
+| O quê | URL |
 |---|---|
-| `infra-database` | ✅ RDS provisionado; publicar `connection_url` nos secrets |
-| `infra-kubernetes` | Secret `DATABASE_URL`; README e RUNBOOK |
-| `lambda-auth` | driver `pg`, env `DATABASE_URL`, Terraform |
-| `app` | TypeORM/Prisma, repositórios SQL, migrations SQL, testes, `.env` |
-| Documentação | ✅ RFC-002, ER, diagramas; revisar READMEs e fase-1/2 (histórico) |
+| API (ALB) | http://k8s-techchal-api-3be88fc582-917637512.us-east-1.elb.amazonaws.com |
+| Swagger | http://k8s-techchal-api-3be88fc582-917637512.us-east-1.elb.amazonaws.com/api |
+| Health | http://k8s-techchal-api-3be88fc582-917637512.us-east-1.elb.amazonaws.com/health/live |
+| Login cliente (API Gateway) | `POST` https://b831ifscuh.execute-api.us-east-1.amazonaws.com/prod/auth/login |
+| Dashboard New Relic | https://one.newrelic.com/redirect/entity/ODUwODAzNnxWSVp8REFTSEJPQVJEfGRhOjEzMTY1ODM5 |
 
-Relacionamentos a mapear antes do código: ver seção 5 de [modelo-de-dados.md](modelo-de-dados.md).
+O hostname do ALB muda se o Ingress for recriado. Confirme com `kubectl get ingress api -n tech-challenge-namespace`.
+
+## 6. Adaptação para RDS — o que foi entregue
+
+| Repositório | Situação |
+|---|---|
+| `infra-database` | RDS PostgreSQL 16 provisionado; `connection_url` nos secrets |
+| `infra-kubernetes` | Secret `DATABASE_URL`, `PGSSL`, Job de migrations SQL |
+| `lambda-auth` | driver `pg` no bundle, `DATABASE_URL`, Terraform + API Gateway |
+| `app` | TypeORM + `pg`, repositórios SQL, migrations SQL, testes, `.env` |
+| Documentação | RFC-002, ER, diagramas, READMEs e RUNBOOK atualizados |
+
+Relacionamentos: seção 5 de [modelo-de-dados.md](modelo-de-dados.md).
