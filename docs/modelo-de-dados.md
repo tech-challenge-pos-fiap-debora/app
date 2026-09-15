@@ -2,30 +2,33 @@
 
 ## 1. Objetivo
 
-Descrever o modelo relacional persistido no **Amazon RDS PostgreSQL** (`techchallenge`), os relacionamentos, snapshots da ordem de serviço e os ajustes de consistência e desempenho exigidos pelo Tech Challenge Fase 3.
+Descrever o que está no **Amazon RDS PostgreSQL** (`techchallenge`): tabelas, FKs, snapshots da ordem de serviço e por que o agregado da OS usa JSONB. Justificativa do motor: [RFC-002](rfc/002-escolha-do-postgresql-rds.md). Schema versionado em `migrations/sql/001_schema.sql`.
 
-## 2. Escolha do banco
+Instância: `tech-challenge-prod-pg` (`infra-database`). Sem acesso público; API e Lambda entram pela VPC.
 
-RDS PostgreSQL 16, instância `tech-challenge-prod-pg`, provisionada pelo repositório `infra-database`. Justificativa na [RFC-002](rfc/002-escolha-do-postgresql-rds.md).
+## 2. O que o avaliador vê no banco
 
-## 3. Diagrama entidade-relacionamento
+Sete tabelas. **Não existem** tabelas `service_order_line`, `service_order_part` nem `service_order_budget`. Linhas, peças, orçamento e histórico da OS são JSONB **na própria** `service_order`.
+
+| Tabela | Papel |
+|---|---|
+| `users` | Equipe (e-mail/senha). Nome no SQL: `users`, não `user`. |
+| `client` | Cliente da oficina. A Lambda autentica por `document`. |
+| `vehicle` | Veículo (placa única). Sem FK para `client`. |
+| `product` | Peça do catálogo. |
+| `product_batch` | Lote / estoque da peça. |
+| `catalog_service` | Serviço vendável. Peças padrão em `default_parts` (JSONB). |
+| `service_order` | Agregado da OS: FKs + snapshot + JSONB do atendimento. |
+
+## 3. Diagrama (físico — o que existe no RDS)
 
 ```mermaid
 erDiagram
-    USER ||--o{ USER : "autentica equipe"
     CLIENT ||--o{ SERVICE_ORDER : "client_id"
     VEHICLE ||--o{ SERVICE_ORDER : "vehicle_id"
-    CATALOG_SERVICE ||--o{ CATALOG_SERVICE_DEFAULT_PART : "tem"
-    CATALOG_SERVICE ||--o{ SERVICE_ORDER_LINE : "catalog_service_id"
     PRODUCT ||--o{ PRODUCT_BATCH : "product_code"
-    PRODUCT ||--o{ SERVICE_ORDER_PART : "product_code"
-    SERVICE_ORDER ||--|{ SERVICE_ORDER_LINE : "contem"
-    SERVICE_ORDER ||--o{ SERVICE_ORDER_PART : "contem"
-    SERVICE_ORDER ||--o| SERVICE_ORDER_BUDGET : "tem"
-    SERVICE_ORDER ||--|{ SERVICE_ORDER_STATUS_HISTORY : "registra"
-    SERVICE_ORDER_BUDGET ||--|{ SERVICE_ORDER_BUDGET_ITEM : "contem"
 
-    USER {
+    USERS {
         uuid id PK
         string email UK
         string password_hash
@@ -53,14 +56,15 @@ erDiagram
         uuid id PK
         string code UK
         string name
-        numeric sale_price
+        string description
     }
 
     PRODUCT_BATCH {
         uuid id PK
         string product_code FK
         numeric quantity
-        date expires_at
+        numeric cost_price
+        numeric sale_price
     }
 
     CATALOG_SERVICE {
@@ -68,6 +72,7 @@ erDiagram
         string name
         numeric base_price
         boolean active
+        jsonb default_parts
     }
 
     SERVICE_ORDER {
@@ -81,94 +86,81 @@ erDiagram
         string vehicle_brand
         string vehicle_model
         int vehicle_year
-    }
-
-    SERVICE_ORDER_LINE {
-        uuid id PK
-        uuid service_order_id FK
-        uuid catalog_service_id FK
-        string name
-        numeric unit_price
-        int quantity
-    }
-
-    SERVICE_ORDER_PART {
-        uuid id PK
-        uuid service_order_id FK
-        string product_code FK
-        string name
-        int quantity
+        text diagnosis
+        jsonb service_lines
+        jsonb part_lines
+        jsonb budget
+        jsonb status_history
     }
 ```
 
-## 4. Tabelas e responsabilidades
+`users` não tem FK para o restante: autentica a equipe, não faz parte do agregado da OS.
 
-### 4.1 `user`
+## 4. Por que JSONB na OS (e tabelas no cadastro)
 
-Equipe interna. Papéis: `admin`, `atendente`, `estoquista`, `mecanico`. Senha com bcrypt. Campo `active` bloqueia JWT. Autenticação por e-mail/senha na API — não usa CPF.
+Cadastro (`client`, `vehicle`, `product`, `catalog_service`) é relacional clássico: UNIQUE, FK, uma linha por entidade, consultado pela Lambda e pela API.
 
-### 4.2 `client`
+A ordem de serviço é **um agregado**: abre, diagnostica, orça e muda de status numa transação. Preço e nome do dia precisam ficar congelados (snapshot). Por isso:
 
-Cadastro da oficina. `document` (CPF/CNPJ) único e imutável. `status`: `ACTIVE` ou `INACTIVE`. Lambda e `ValidateUserUseCase` recusam inativo.
+- `client_id` / `vehicle_id` — FK `ON DELETE RESTRICT` (integridade, consulta por cadastro).
+- `client_name`, `client_document`, `vehicle_plate`, … — cópia na abertura (não muda se o cliente alterar o nome depois).
+- `service_lines`, `part_lines`, `budget`, `status_history` — JSONB na mesma linha. Uma leitura devolve a OS inteira, sem JOIN. O histórico de status alimenta o New Relic (`previousStatusDurationMs`) a partir do domínio, não de uma tabela extra.
 
-### 4.3 `vehicle`
+Isso **é o modelo persistido**. O domínio NestJS continua com entidades ricas; o adapter TypeORM serializa o agregado nessas colunas.
 
-Placa única. **Não há FK para `client` no código atual** — cliente e veículo só se relacionam quando uma OS é aberta (via `service_order.client_id` e `service_order.vehicle_id`).
+## 5. Tabelas em detalhe
 
-### 4.4 `product` e `product_batch`
+### 5.1 `users`
 
-Catálogo de peça e lote. FK `product_batch.product_code` → `product.code`.
+Papéis: `admin`, `atendente`, `estoquista`, `mecanico`. Senha bcrypt. `active` bloqueia JWT. Login: `POST /auth/login` da API (e-mail/senha). Não usa CPF.
 
-### 4.5 `catalog_service` e `catalog_service_default_part`
+### 5.2 `client`
 
-Serviço vendável. Peças sugeridas em tabela filha `catalog_service_default_part`.
+`document` (CPF/CNPJ) único. `status`: `ACTIVE` ou `INACTIVE`. Lambda e `ValidateUserUseCase` recusam inativo. Seed de demo: CPF `52998224725`.
 
-### 4.6 `service_order` — agregado raiz
+### 5.3 `vehicle`
 
-Status: `RECEIVED`, `IN_DIAGNOSIS`, `WAITING_APPROVAL`, `IN_EXECUTION`, `FINISHED`, `DELIVERED`, `CANCELLED`.
+Placa única. Cliente e veículo só se encontram na OS (`service_order.client_id` + `vehicle_id`).
 
-| Coluna | Tipo | Por quê |
-|---|---|---|
-| `client_id`, `vehicle_id` | FK | Filtrar OS por cadastro; integridade referencial |
-| `client_document`, `client_name`, … | snapshot | Valores do dia da abertura — não mudam se o cliente casar depois |
-| Linhas, orçamento, histórico | tabelas filhas | 1:N com `service_order_id` |
+### 5.4 `product` e `product_batch`
 
-## 5. Relacionamentos
+Peça e lote. FK `product_batch.product_code` → `product.code`. Preço de venda vive no lote (`sale_price`); a OS copia o valor para `part_lines` na geração do orçamento.
 
-| De | Para | Tipo | Materialização |
+### 5.5 `catalog_service`
+
+`default_parts` JSONB: `[{ "productCode", "quantity" }, …]`. Serviço inativo não entra em OS nova.
+
+### 5.6 `service_order`
+
+Status: `RECEIVED` → `IN_DIAGNOSIS` → `WAITING_APPROVAL` → `IN_EXECUTION` → `FINISHED` → `DELIVERED` (ou `CANCELLED`). Único ponto de mudança: `ServiceOrder.transitionTo`.
+
+Consultar no RDS (túnel/DBeaver ou `psql` na VPC):
+
+```sql
+SELECT id, status, client_document, vehicle_plate, diagnosis, budget
+FROM service_order
+ORDER BY created_at DESC
+LIMIT 20;
+```
+
+O console AWS (RDS → instância) **não** lista essas linhas.
+
+## 6. Relacionamentos
+
+| De | Para | Tipo | Onde está |
 |---|---|---|---|
 | `product` → `product_batch` | 1:N | FK `product_code` |
-| `catalog_service` → `catalog_service_default_part` | 1:N | FK `catalog_service_id` |
-| `client` → `service_order` | 1:N | FK `client_id` + snapshot |
-| `vehicle` → `service_order` | 1:N | FK `vehicle_id` + snapshot |
-| `catalog_service` → `service_order_line` | 1:N | FK `catalog_service_id` + cópia de nome/preço |
-| `product` → `service_order_part` | 1:N | FK `product_code` + cópia de nome |
-| `service_order` → filhos | 1:N | `service_order_id` |
-| `user` | — | sem FK para OS |
+| `client` → `service_order` | 1:N | FK `client_id` + colunas snapshot |
+| `vehicle` → `service_order` | 1:N | FK `vehicle_id` + colunas snapshot |
+| `catalog_service` → linhas da OS | 1:N lógico | `service_lines` JSONB (id + nome + preço copiados) |
+| `product` → peças da OS | 1:N lógico | `part_lines` JSONB |
+| `users` | — | sem FK para OS |
 
-**Regra de snapshot:** leitura do atendimento usa colunas copiadas na OS, não JOIN com cadastro. FK serve para consultas e integridade; `ON DELETE RESTRICT` em `client_id`/`vehicle_id`.
+## 7. Consistência e desempenho
 
-## 6. Ajustes de consistência
-
-1. **Snapshot na abertura.** `OpenServiceOrderUseCase` grava FK + colunas copiadas antes do `INSERT` das linhas.
-2. **Valores de objeto.** CPF/CNPJ, placa e e-mail normalizados na aplicação (`DocumentVO`, `PlateVO`, `EmailVO`).
-3. **Máquina de estados.** `ServiceOrder.transitionTo` único ponto de mudança de status; histórico em `service_order_status_history`.
-4. **Status do cliente.** Inativo não recebe JWT; cadastro permanece para OS antigas.
-5. **Transação na abertura.** Valida catálogo e peças antes de `COMMIT`.
-
-## 7. Ajustes de desempenho
-
-1. **UNIQUE** em `client.document`, `vehicle.plate`, `user.email`, `product.code`.
-2. **Índice** em `service_order.status` para filas da oficina.
-3. **Leitura da OS** com JOINs só nas tabelas filhas (`line`, `part`, `budget_item`) — cadastro via snapshot, sem JOIN extra.
-4. **Referência por código** nas peças da OS.
-5. **Health checks** do kubelet filtrados no Pino (volume New Relic).
-
-## 8. Checklist de adaptação (código)
-
-| Área | Pendência |
-|---|---|
-| `app` | TypeORM/Prisma + `pg`; repositórios SQL; migrations SQL; testes; `DATABASE_URL` |
-| `lambda-auth` | driver `pg`; `DATABASE_URL`; `SELECT` em `client` |
-| `infra-kubernetes` | secret `DATABASE_URL`; Terraform e workflows |
-| Documentação | este arquivo, RFC-002, diagramas, READMEs, RUNBOOK |
+1. Snapshot na abertura (`OpenServiceOrderUseCase`): FK + colunas copiadas no mesmo `INSERT`.
+2. CPF, placa e e-mail normalizados na aplicação (`DocumentVO`, `PlateVO`, `EmailVO`).
+3. Inativo não recebe JWT; OS antigas permanecem.
+4. UNIQUE em `client.document`, `vehicle.plate`, `users.email`, `product.code`.
+5. Índice em `service_order.status` e em `client_document` / `vehicle_plate`.
+6. Leitura da OS = um `SELECT` na raiz; cadastro não entra no JOIN do atendimento.

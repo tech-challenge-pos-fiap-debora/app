@@ -26,8 +26,8 @@ MongoDB Atlas e DocumentDB foram descartados: o banco gerenciado precisa estar n
 
 ### 3.1 Motor e acesso
 
-- PostgreSQL 16, driver `pg`, ORM TypeORM (ou Prisma) no NestJS.
-- Migrations versionadas em SQL (substituem `migrate-mongo`).
+- PostgreSQL 16, driver `pg`, ORM TypeORM no NestJS.
+- Migrations versionadas em SQL (`migrations/sql/`).
 - Lambda de auth: consulta `SELECT` na tabela `client`.
 
 ### 3.2 Hospedagem

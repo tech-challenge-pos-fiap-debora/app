@@ -14,14 +14,14 @@ flowchart TB
         LBD["Lambda auth\nvalida CPF, status, emite JWT"]
         ALB["Application Load Balancer\nIngress da API"]
 
-        subgraph EKS["EKS — tech-challenge-prod"]
+        subgraph EKS["EKS — tech-challenge-prod-eks"]
             API["Deployment api\nNestJS + agente New Relic"]
             HPA["HPA 1..5\nCPU 70% / mem 80%"]
             NRAGENT["nri-bundle\ninfra + kube-state-metrics"]
         end
 
         subgraph RDS["RDS PostgreSQL 16"]
-            DB[("techchallenge\nclient, user, vehicle,\nproduct, service_order…")]
+            DB[("techchallenge\nclient, users, vehicle,\nproduct, service_order")]
         end
 
         NAT["NAT Gateway"]
@@ -60,4 +60,4 @@ flowchart TB
 | API NestJS | `app` | Domínio, JWT interno, Swagger `/api` |
 | New Relic | instrumentação em `app`, `lambda-auth` e Helm no `infra-kubernetes` | APM, logs, dashboards |
 
-A API não passa pelo API Gateway. O tráfego de negócio entra pelo ALB. O gateway só autentica o cliente, conforme combinado para esta entrega.
+A API **não** passa pelo API Gateway. O tráfego da oficina entra pelo ALB. O gateway só faz `POST /auth/login` do cliente (CPF → JWT). Rotas internas exigem esse JWT (ou o da equipe) no `JwtAuthGuard`.

@@ -25,6 +25,8 @@ Ordem de apply: banco → cluster → API → Lambda (a Lambda descobre a VPC po
 
 Não usar monorepo nem submodules. Contratos entre repos são secrets (`DATABASE_URL`, `JWT_SECRET`) e tags da VPC.
 
+O enunciado cita deploy automático de homologação e produção. O Learner Lab oferece **uma conta, uma VPC e uma sessão IAM** — um segundo cluster EKS + RDS estouraria cota e custo. Homologação, neste recorte, é o `terraform plan` / CI do Pull Request; produção é o `apply` na `main`. Não há branch `homolog` nem ambiente paralelo.
+
 ## Consequências
 
 Cada pipeline falha isolada. O custo é a orquestração: a imagem da API só existe depois do ECR, que só existe depois do `infra-kubernetes`. O dispatch `workflow_dispatch` no `app` cobre esse encadeamento.
