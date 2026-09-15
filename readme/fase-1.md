@@ -1,8 +1,8 @@
 # Fase 1 — Aplicação (Oficina Mecânica / Ordem de Serviço)
 
-> **Fase 3:** produção usa **RDS PostgreSQL** (`DATABASE_URL`). Este documento descreve a Fase 1 original (MongoDB local). Ver [`docs/arquitetura.md`](../docs/arquitetura.md).
+> **Produção (Fase 3):** **RDS PostgreSQL** via `DATABASE_URL`. Ver [`docs/arquitetura.md`](../docs/arquitetura.md).
 
-API de oficina mecânica: ordens de serviço, clientes, veículos, catálogo, produtos, estoque e rotas públicas para orçamento/status. **NestJS**, **TypeScript**, **MongoDB**, **JWT** e **Swagger** em **`/api`**.
+API de oficina mecânica: ordens de serviço, clientes, veículos, catálogo, produtos, estoque e rotas públicas para orçamento/status. **NestJS**, **TypeScript**, **PostgreSQL**, **JWT** e **Swagger** em **`/api`**.
 
 > Esta é a documentação da **Fase 1** (a aplicação em si). O passo a passo de
 > infraestrutura/deploy em Kubernetes está em [`fase-2.md`](fase-2.md).
@@ -12,7 +12,7 @@ API de oficina mecânica: ordens de serviço, clientes, veículos, catálogo, pr
 ## Arquitetura da aplicação
 
 Monólito modular NestJS com *bounded contexts* DDD e camadas Clean Architecture.
-A visão de componentes (contextos, rotas HTTP, ACL entre módulos e MongoDB) está em:
+A visão de componentes (contextos, rotas HTTP, ACL entre módulos e PostgreSQL) está em:
 
 [`../docs/diagrams/componentes-aplicacao.md`](../docs/diagrams/componentes-aplicacao.md)
 
@@ -23,8 +23,8 @@ A visão de componentes (contextos, rotas HTTP, ACL entre módulos e MongoDB) es
 ### Requisitos
 
 - **Docker** — criar e gerir contêineres.
-- **Docker Compose** — subir API e Mongo juntos.
-- **Node.js** (recomendado via [nvm](https://github.com/nvm-sh/nvm), versão em [`.nvmrc`](../.nvmrc)) e **Yarn** — para instalar dependências e correr **`yarn migrate:up`** na tua máquina (as migrations ligam ao Mongo em `localhost:27017`).
+- **Docker Compose** — subir API e Postgres juntos.
+- **Node.js** (recomendado via [nvm](https://github.com/nvm-sh/nvm), versão em [`.nvmrc`](../.nvmrc)) e **Yarn** — para instalar dependências e correr **`yarn migrate:up`** na tua máquina (as migrations ligam ao Postgres em `localhost:5432`).
 
 ### Execução
 
@@ -68,9 +68,9 @@ A visão de componentes (contextos, rotas HTTP, ACL entre módulos e MongoDB) es
    cp .env.example .env
    ```
 
-   O `.env` deve ter `MONGO_URL` apontando para o Mongo no host (ex.: `mongodb://localhost:27017/techChallenge`), para a API no host e para as migrations — ver comentários em [`.env.example`](../.env.example).
+   O `.env` deve ter `DATABASE_URL` apontando para o Postgres no host (ex.: `postgresql://postgres:postgres@localhost:5432/techchallenge`) — ver comentários em [`.env.example`](../.env.example).
 
-6. **Subir os serviços** (API + Mongo em segundo plano, com rebuild se necessário):
+6. **Subir os serviços** (API + Postgres em segundo plano, com rebuild se necessário):
 
    ```bash
    docker compose up -d --build
@@ -78,7 +78,7 @@ A visão de componentes (contextos, rotas HTTP, ACL entre módulos e MongoDB) es
 
    Em ambientes mais antigos, o equivalente pode ser: `docker-compose up -d --build`.
 
-7. **Aplicar migrations** (dados iniciais na base), **na máquina**, com o mesmo `MONGO_URL` do `.env`:
+7. **Aplicar migrations** (schema + seed), **na máquina**, com o mesmo `DATABASE_URL` do `.env`:
 
    ```bash
    yarn migrate:up
@@ -96,16 +96,16 @@ A visão de componentes (contextos, rotas HTTP, ACL entre módulos e MongoDB) es
 
 1. Segue os passos **1 a 5** da secção anterior (clone, `cd`, `nvm use`, `yarn install`, `cp .env.example .env`).
 2. Garante **Node** (via nvm ou instalador oficial) e **Yarn**.
-3. **MongoDB** acessível na porta **27017**, por exemplo só o Mongo com Docker:
+3. **PostgreSQL** acessível na porta **5432**, por exemplo só o Postgres com Docker:
 
    ```bash
-   docker compose up -d mongo
+   docker compose up -d postgres
    ```
 
    ou:
 
    ```bash
-   docker run -d --name mongo-dev -p 27017:27017 mongo:7
+   docker run -d --name postgres-dev -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:16
    ```
 
 4. **Migrations** e **arranque em modo desenvolvimento:**
@@ -139,10 +139,10 @@ Roteiros manuais com **URL e body:**
 ## Tecnologias utilizadas
 
 - Node.js, TypeScript
-- NestJS, Mongoose, Passport/JWT
-- MongoDB
+- NestJS, TypeORM, Passport/JWT
+- PostgreSQL (`pg`)
 - Docker e Docker Compose
-- migrate-mongo (migrations)
+- Migrations SQL (`migrations/sql/`, `scripts/run-migrations.mjs`)
 
 ---
 
@@ -158,21 +158,11 @@ Roteiros manuais com **URL e body:**
 
 ---
 
-## Justificativa da escolha do MongoDB
+## Banco de dados
 
-O MongoDB se encaixa muito bem no contexto desta aplicação, principalmente devido à estrutura da Ordem de Serviço (OS), que concentra diversas informações relacionadas ao atendimento em um único registro.
-
-A modelagem orientada a documentos permite armazenar na própria Ordem de Serviço todos os dados necessários para sua consulta, funcionando como um *snapshot* das informações relevantes no momento da criação. Dessa forma, a OS torna-se um registro independente, reduzindo a necessidade de múltiplas consultas e relacionamentos para recuperar os dados de um atendimento.
-
-Outro ponto importante é a flexibilidade do esquema. Em estágios iniciais da aplicação, a estrutura da Ordem de Serviço pode não possuir relacionamentos mais complexos, como peças, histórico detalhado ou múltiplos status. Conforme a aplicação evolui, novos campos e estruturas podem ser adicionados ao documento sem a necessidade de migrações complexas ou alterações significativas no banco de dados. Isso permite que documentos mais antigos coexistam com versões mais recentes da estrutura.
-
-Além disso, o MongoDB oferece suporte a transações ACID, garantindo consistência e confiabilidade dos dados. Após avaliar os requisitos do projeto, identificou-se que a principal necessidade era assegurar a integridade das informações registradas durante o ciclo de vida da Ordem de Serviço.
-
-A aplicação possui um fluxo orientado a ações realizadas pelos usuários. Por exemplo, um atendente cria manualmente uma Ordem de Serviço, um mecânico adiciona peças e atualiza o orçamento, e o cliente realiza a aprovação do serviço. Como as alterações no banco de dados são resultado de ações humanas e ocorrem de forma gradual, não existe um cenário de alta concorrência ou processamento massivo que exija soluções voltadas principalmente para escalabilidade.
-
-Dessa forma, a confiabilidade dos dados, a flexibilidade da modelagem e a capacidade de evolução do esquema sem grandes impactos na aplicação foram os principais critérios para a escolha do MongoDB, pois estão diretamente alinhados às necessidades do domínio e ao fluxo operacional da aplicação.
-
-Por fim, a utilização do NestJS contribuiu para essa escolha, pois a integração com o MongoDB por meio do Mongoose é simples, madura e amplamente utilizada pela comunidade, facilitando a modelagem, validação e manutenção dos documentos da aplicação.
+A aplicação usa **PostgreSQL** (local via Docker Compose / Kind; produção via **RDS**).
+A justificativa da escolha na Fase 3 está em
+[`docs/rfc/002-escolha-do-postgresql-rds.md`](../docs/rfc/002-escolha-do-postgresql-rds.md).
 
 ---
 
@@ -181,7 +171,7 @@ Por fim, a utilização do NestJS contribuiu para essa escolha, pois a integraç
 | Comando | Descrição |
 |---------|-----------|
 | `yarn test` | Testes unitários (com cobertura mínima nos domínios críticos) |
-| `yarn test:integration` | Testes de integração do fluxo principal da OS (Mongo em execução) |
+| `yarn test:integration` | Testes de integração do fluxo principal da OS (Postgres em execução) |
 | `yarn lint` | ESLint |
 | `yarn format` | Prettier |
 | `yarn build` | Build para produção |

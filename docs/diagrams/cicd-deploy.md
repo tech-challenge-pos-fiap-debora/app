@@ -1,7 +1,7 @@
 # Diagrama de Fluxo CI/CD
 
 > **Fase 3 (produção):** CI usa PostgreSQL; deploy na AWS via ECR + `infra-kubernetes`.
-> Os diagramas abaixo descrevem também o CD legado da Fase 2 (Kind + Mongo local).
+> Os diagramas abaixo descrevem também o CD legado da Fase 2 (Kind + Postgres local).
 
 Baseado nos workflows reais do repositório:
 [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) e
@@ -10,14 +10,14 @@ Baseado nos workflows reais do repositório:
 ## CI — Integração Contínua (`ci.yml`)
 
 Dispara em `push` para `main`/`master` e em `pull_request`. Sobe um serviço
-MongoDB e roda testes + build.
+PostgreSQL e roda testes + build.
 
 ```mermaid
 flowchart LR
     Trigger["push / pull_request"] --> Checkout["Checkout"]
     Checkout --> Install["yarn install --frozen-lockfile"]
     Install --> Unit["yarn test"]
-    Unit --> Integration["yarn test:integration MongoDB service"]
+    Unit --> Integration["yarn test:integration PostgreSQL service"]
     Integration --> Build["yarn build"]
 ```
 
@@ -44,7 +44,7 @@ flowchart TB
         D1["Download das imagens"] --> D2["terraform apply Kind + namespace + metrics-server"]
         D2 --> D3["kind load docker-image"]
         D3 --> D4["kubectl apply namespace ConfigMap Secret"]
-        D4 --> D5["MongoDB PVC Service Deployment"]
+        D4 --> D5["PostgreSQL PVC Service Deployment"]
         D5 --> D6["Job api-migration"]
         D6 --> D7["API Deployment Service HPA"]
         D7 --> D8["Smoke test /health/live e /health/ready"]
