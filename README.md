@@ -6,12 +6,16 @@ Aplicação principal da oficina mecânica. Roda no Amazon EKS: ordens de servi�
 
 Documentação arquitetural da Fase 3: [`docs/arquitetura.md`](docs/arquitetura.md).
 
-Fases anteriores: [`readme/fase-1.md`](readme/fase-1.md), [`readme/fase-2.md`](readme/fase-2.md) (Kind + Mongo local — **Fase 3 usa RDS PostgreSQL**).
+| Fase | Conteúdo | Link |
+|------|----------|------|
+| **Fase 1** | Aplicação local (Docker Compose), APIs e diagrama de componentes. | [`readme/fase-1.md`](readme/fase-1.md) |
+| **Fase 2** | Deploy no Kind: Terraform + manifestos `k8s/` (legado local). | [`readme/fase-2.md`](readme/fase-2.md) |
+| **Fase 3** | **EKS + RDS PostgreSQL** (produção). | [`docs/arquitetura.md`](docs/arquitetura.md) |
 
 ## Tecnologias
 
 - Node.js 22, TypeScript, NestJS 11
-- PostgreSQL via TypeORM (ou Prisma) + driver `pg`
+- PostgreSQL via TypeORM + driver `pg`
 - JWT (Passport) para equipe e para o token `role=cliente` da Lambda
 - Docker (imagem `production` e `migrations`)
 - New Relic (APM, logs JSON, eventos de negócio)
@@ -90,4 +94,17 @@ Visão de nuvem: [`docs/diagrams/componentes-nuvem.md`](docs/diagrams/componente
 - Login de cliente: API Gateway do `lambda-auth`, depois Bearer nas rotas com `@AuthRoles`
 - Health: `GET /health/live`, `GET /health/ready`
 
-Roteiros: [`docs/api-fluxo-fase-2-endpoints.md`](docs/api-fluxo-fase-2-endpoints.md).
+Roteiros: [`docs/api-fluxo-fase-2-endpoints.md`](docs/api-fluxo-fase-2-endpoints.md), [`docs/api-fluxo-url-body.md`](docs/api-fluxo-url-body.md).
+
+## Vídeo demonstrativo
+
+Demonstra deploy da aplicação, execução do CI/CD, consumo das APIs e escalabilidade automática (HPA).
+
+- **Link (Google Drive):** [Fase 2 — vídeo demonstrativo](https://drive.google.com/drive/folders/1lh3C0epIgxDlT67pXlC3IdDHHwV4oc2z?usp=sharing)
+
+## Outros documentos
+
+- Documentação por fase: [`readme/fase-1.md`](readme/fase-1.md) e [`readme/fase-2.md`](readme/fase-2.md)
+- Infraestrutura (Terraform/Kind): [`infra/README.md`](infra/README.md)
+
+**Licença:** UNLICENSED (projeto acadêmico).
