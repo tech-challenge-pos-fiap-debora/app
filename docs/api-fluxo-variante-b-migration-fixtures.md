@@ -4,7 +4,7 @@
 
 **Antes:** login e contexto em [Fluxo feliz da API — índice](api-fluxo-url-body.md).
 
-Dados relevantes ([fixtures](../migrations/20250504130000-demo-fixtures.js) + [catálogo demo](../migrations/20250504140000-demo-catalog-services.js)):
+Dados relevantes (seed em [`migrations/sql/002_seed.sql`](../migrations/sql/002_seed.sql)):
 
 | Campo | Valor |
 |-------|--------|

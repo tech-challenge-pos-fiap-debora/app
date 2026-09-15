@@ -40,4 +40,4 @@ Duas formas de chegar à mesma sequência (**registar diagnóstico** com `PATCH 
 
 - **[Abrir OS numa única chamada (`POST /service-orders/open`)](api-fluxo-abrir-os-endpoint.md)** — cria cliente/veículo e vincula serviços e peças (já cadastrados) num só request.
 - Teste de referência (fluxo completo): `test/integration/ordem-de-servico/service-order-flow.integration-spec.ts`.
-- Migrations demo (Variante B): [fixtures](../migrations/20250504130000-demo-fixtures.js) e [catálogo demo](../migrations/20250504140000-demo-catalog-services.js).
+- Migrations demo (Variante B): [seed SQL](../migrations/sql/002_seed.sql).

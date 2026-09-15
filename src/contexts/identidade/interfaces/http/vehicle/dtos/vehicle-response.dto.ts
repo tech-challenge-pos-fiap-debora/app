@@ -5,7 +5,7 @@ import { IsPlate } from '../../../../../shared/interfaces/http/validators/is-pla
 
 export class VehicleResponseDto {
   @ApiProperty({
-    description: 'Identificador do veículo (MongoDB)',
+    description: 'Identificador do veículo (UUID)',
     example: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
   })
   @IsString()

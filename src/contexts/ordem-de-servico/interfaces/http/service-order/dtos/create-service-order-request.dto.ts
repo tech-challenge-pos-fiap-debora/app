@@ -3,7 +3,7 @@ import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateServiceOrderRequestDto {
   @ApiProperty({
-    description: 'Identificador do cliente (Mongo _id)',
+    description: 'Identificador do cliente (UUID)',
     example: '87042d7c-6942-4a9e-ba88-2615f5923265',
   })
   @IsString()
@@ -11,7 +11,7 @@ export class CreateServiceOrderRequestDto {
   declare clientId: string;
 
   @ApiProperty({
-    description: 'Identificador do veículo (Mongo _id)',
+    description: 'Identificador do veículo (UUID)',
     example: '979614bc-5331-433b-b400-c5663db9055f',
   })
   @IsString()

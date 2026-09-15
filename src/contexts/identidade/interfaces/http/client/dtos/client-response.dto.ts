@@ -5,7 +5,7 @@ import { ClientStatus } from '../../../../domain/entities/client-status';
 
 export class ClientResponseDto {
   @ApiProperty({
-    description: 'Identificador do cliente (MongoDB)',
+    description: 'Identificador do cliente (UUID)',
     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   })
   @IsString()

@@ -13,18 +13,17 @@ health checks e pipeline **CI/CD** no GitHub Actions.
 
 | Permitido no cluster (`k8s/`) | Fora do cluster (proibido nesta fase) |
 |-------------------------------|----------------------------------------|
-| Pod MongoDB | Docker Compose com `api` / `mongo` |
-| Job de migrations | `yarn start` / Mongo na máquina local |
+| Pod PostgreSQL | Docker Compose com `api` / `postgres` |
+| Job de migrations | `yarn start` / Postgres na máquina local |
 | Pods da API (+ HPA) | Qualquer outro processo servindo a API/banco |
 
 Docker no host **não** é o ambiente da aplicação: ele só executa os nós do Kind
-e empacota as imagens (`docker build` → `kind load`). A API e o Mongo sobem
+e empacota as imagens (`docker build` → `kind load`). A API e o Postgres sobem
 **somente** como pods no namespace `tech-challenge-namespace`.
 Ver o [diagrama de infraestrutura](../docs/diagrams/infra-kind-k8s.md).
 
-> Em cloud (ex.: AWS) o Terraform cria o cluster e um banco gerenciado. No Kind
-> não há DocumentDB/RDS: o banco é o Deployment Mongo **dentro** do cluster
-> (`k8s/mongo-*.yaml`), junto com a API — ainda assim, tudo no Kubernetes.
+> Em cloud (Fase 3) o banco é **RDS PostgreSQL** (`infra-database`). No Kind local
+> o banco é o Deployment Postgres **dentro** do cluster (`k8s/postgres-*.yaml`).
 
 ---
 
@@ -43,7 +42,7 @@ Ver o [diagrama de infraestrutura](../docs/diagrams/infra-kind-k8s.md).
 |---------|---------|
 | [`Dockerfile`](../Dockerfile) | Imagem multi-stage: `development`, `build`, `prod-deps`, `migrations`, `production` |
 | [`infra/`](../infra) | Terraform que cria o cluster Kind + namespace + metrics-server |
-| [`k8s/`](../k8s) | Manifestos Kubernetes (ConfigMap, Secret, Mongo, Job de migrations, API, Service, HPA) |
+| [`k8s/`](../k8s) | Manifestos Kubernetes (ConfigMap, Secret, Postgres, Job de migrations, API, Service, HPA) |
 | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) | CI: testes unitários/integração + build |
 | [`.github/workflows/cd.yml`](../.github/workflows/cd.yml) | CD: build das imagens + Terraform + deploy no cluster |
 
@@ -52,11 +51,11 @@ Ver o [diagrama de infraestrutura](../docs/diagrams/infra-kind-k8s.md).
 | Arquivo | Recurso |
 |---------|---------|
 | `namespace.yaml` | Namespace `tech-challenge-namespace` |
-| `configmap.yaml` | Variáveis não sensíveis (`NODE_ENV`, `PORT`, `MONGO_URL`, ...) |
-| `secret.yaml` | Segredos (`JWT_SECRET`, `SEED_ADMIN_PASSWORD`, ...) |
-| `mongo-pvc.yaml` / `mongo-service.yaml` / `mongo-deployment.yaml` | MongoDB com volume persistente |
-| `migration-job.yaml` | Job que roda `yarn migrate:up` antes da API subir |
-| `api-deployment.yaml` | Deployment da API (initContainer aguarda o Mongo, probes `/health/live` e `/health/ready`) |
+| `configmap.yaml` | Variáveis não sensíveis (`NODE_ENV`, `PORT`, ...) |
+| `secret.yaml` | Segredos (`DATABASE_URL`, `JWT_SECRET`, `SEED_ADMIN_PASSWORD`, ...) |
+| `postgres-pvc.yaml` / `postgres-service.yaml` / `postgres-deployment.yaml` | PostgreSQL com volume persistente |
+| `migration-job.yaml` | Job que roda `node scripts/run-migrations.mjs` antes da API subir |
+| `api-deployment.yaml` | Deployment da API (initContainer aguarda o Postgres, probes `/health/live` e `/health/ready`) |
 | `api-service.yaml` | Service que expõe a API |
 | `hpa.yaml` | HPA (1→5 réplicas, alvo de 70% de CPU e 80% de memória) |
 
@@ -64,7 +63,7 @@ Ver o [diagrama de infraestrutura](../docs/diagrams/infra-kind-k8s.md).
 
 ## Pré-requisitos
 
-Ferramentas de **provisionamento e empacotamento** no host (não executam a API/Mongo):
+Ferramentas de **provisionamento e empacotamento** no host (não executam a API/Postgres):
 
 - [Docker](https://docs.docker.com/get-docker/) — nós do Kind + `docker build`
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.5
@@ -78,13 +77,13 @@ Ferramentas de **provisionamento e empacotamento** no host (não executam a API/
 
 ### 1. Gate de qualidade (antes do deploy)
 
-Somente testes **unitários** e build no host — **sem** subir API/Mongo fora do
-cluster. Integração com Mongo fica no CI ou validada pelo smoke test **depois**
+Somente testes **unitários** e build no host — **sem** subir API/Postgres fora do
+cluster. Integração com Postgres fica no CI ou validada pelo smoke test **depois**
 do deploy no Kind.
 
 ```bash
 yarn install --frozen-lockfile
-yarn test                 # unitários + cobertura (sem Mongo)
+yarn test                 # unitários + cobertura
 yarn build
 ```
 
@@ -141,16 +140,16 @@ kubectl apply -f k8s/secret.yaml
 > **Segredos:** ajuste `k8s/secret.yaml` com valores reais (por exemplo `JWT_SECRET`
 > e `SEED_ADMIN_PASSWORD`) antes de aplicar. Não versione segredos de produção.
 
-### 6. Subir o MongoDB (no cluster)
+### 6. Subir o PostgreSQL (no cluster)
 
 Deployment + Service + PVC **dentro** do Kind — o banco roda como pod
 Kubernetes, não como container à parte no Docker Compose.
 
 ```bash
-kubectl apply -f k8s/mongo-pvc.yaml
-kubectl apply -f k8s/mongo-service.yaml
-kubectl apply -f k8s/mongo-deployment.yaml
-kubectl rollout status deployment/mongo -n tech-challenge-namespace --timeout=180s
+kubectl apply -f k8s/postgres-pvc.yaml
+kubectl apply -f k8s/postgres-service.yaml
+kubectl apply -f k8s/postgres-deployment.yaml
+kubectl rollout status deployment/postgres -n tech-challenge-namespace --timeout=180s
 ```
 
 ### 7. Rodar as migrations (Job)
@@ -200,7 +199,7 @@ O pipeline automatiza o fluxo. Veja o
 [diagrama de CI/CD](../docs/diagrams/cicd-deploy.md).
 
 - **CI** ([`ci.yml`](../.github/workflows/ci.yml)): gate de qualidade no runner
-  (`yarn test`, `yarn test:integration`, `yarn build`). O Mongo do *service*
+  (`yarn test`, `yarn test:integration`, `yarn build`). O Postgres do *service*
   do Actions existe **só para os testes do pipeline** — não é o runtime da
   aplicação nem substitui o deploy no Kind.
 - **CD** ([`cd.yml`](../.github/workflows/cd.yml)): em `push` para
@@ -208,7 +207,7 @@ O pipeline automatiza o fluxo. Veja o
   1. **Testes + build** (gate do deploy);
   2. **Build das imagens** Docker (`production` e `migrations`) salvas como artefatos;
   3. **Deploy no Kind**: `terraform apply`, carrega imagens, aplica `k8s/`
-     (Mongo + migrations + API + HPA) e **smoke test** em `/health/live` e
+     (Postgres + migrations + API + HPA) e **smoke test** em `/health/live` e
      `/health/ready`. Aqui a aplicação e o banco rodam **apenas** como pods no
      cluster. Ao final, com `if: always()`, o workflow roda `terraform destroy`.
      O runner é efêmero; para demos use o Kind local (`infra/` + esta página).
