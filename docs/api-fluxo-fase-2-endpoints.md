@@ -1,6 +1,6 @@
-# Fase 2 — Endpoints obrigatórios (passo a passo)
+# Fluxo da ordem de serviço (passo a passo)
 
-Guia curto dos endpoints pedidos no enunciado da Fase 2. Base URL local: `http://localhost:3000`.
+Os mesmos endpoints da oficina, usados na Fase 2 e na Fase 3. Em produção a base é o ALB (`http://k8s-techchal-api-…elb.amazonaws.com`); local: `http://localhost:3000`.
 
 > **Não funciona:** `POST /service-orders/open` seguido direto de `approve-budget`.
 >

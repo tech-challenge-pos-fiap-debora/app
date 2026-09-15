@@ -35,7 +35,7 @@ sequenceDiagram
 
 ## O que a OS grava no RDS
 
-FK `client_id` e `vehicle_id` mais colunas de snapshot (`client_name`, `vehicle_plate`, …). Linhas de serviço e peças em tabelas filhas. Leitura posterior não depende de JOIN com cadastro.
+Uma linha em `service_order`: FKs `client_id` / `vehicle_id`, snapshot (`client_name`, `vehicle_plate`, …) e JSONB `service_lines`, `part_lines`, `budget`, `status_history`. Não há tabelas filhas de linha/orçamento. Leitura posterior não faz JOIN com cadastro.
 
 ## Telemetria
 
