@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { PostgresModule } from '../database/postgres/postgres.module';
 
 @Module({
   imports: [
@@ -8,6 +9,7 @@ import { ConfigModule } from '@nestjs/config';
       ignoreEnvFile: process.env.NODE_ENV === 'test',
       envFilePath: '.env',
     }),
+    PostgresModule,
   ],
 })
 export class ConfigureModule {}

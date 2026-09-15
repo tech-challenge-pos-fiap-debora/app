@@ -1,18 +1,13 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { MongodbModule } from '../../../shared/infrastructure/database/mongodb/mongodb.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import {
-  ClientModel,
-  ClientSchema,
-} from './mongodb/models/client/client.model';
-import { UserModel, UserSchema } from './mongodb/models/user/user.model';
-import {
-  VehicleModel,
-  VehicleSchema,
-} from './mongodb/models/vehicle/vehicle.model';
-import { MongodbClientRepository } from './mongodb/repositories/mongodb-client-repository';
-import { MongodbUserRepository } from './mongodb/repositories/mongodb-user-repository';
-import { MongodbVehicleRepository } from './mongodb/repositories/mongodb-vehicle-repository';
+  ClientEntity,
+  UserEntity,
+  VehicleEntity,
+} from '../../../shared/infrastructure/database/postgres/entities';
+import { TypeormClientRepository } from '../../../shared/infrastructure/database/postgres/repositories/typeorm-client.repository';
+import { TypeormUserRepository } from '../../../shared/infrastructure/database/postgres/repositories/typeorm-user.repository';
+import { TypeormVehicleRepository } from '../../../shared/infrastructure/database/postgres/repositories/typeorm-vehicle.repository';
 import {
   CLIENT_REPOSITORY,
   USER_REPOSITORY,
@@ -21,34 +16,20 @@ import {
 
 @Module({
   imports: [
-    MongodbModule,
-    MongooseModule.forFeature([
-      {
-        name: ClientModel.name,
-        schema: ClientSchema,
-      },
-      {
-        name: VehicleModel.name,
-        schema: VehicleSchema,
-      },
-      {
-        name: UserModel.name,
-        schema: UserSchema,
-      },
-    ]),
+    TypeOrmModule.forFeature([ClientEntity, VehicleEntity, UserEntity]),
   ],
   providers: [
     {
       provide: CLIENT_REPOSITORY,
-      useClass: MongodbClientRepository,
+      useClass: TypeormClientRepository,
     },
     {
       provide: VEHICLE_REPOSITORY,
-      useClass: MongodbVehicleRepository,
+      useClass: TypeormVehicleRepository,
     },
     {
       provide: USER_REPOSITORY,
-      useClass: MongodbUserRepository,
+      useClass: TypeormUserRepository,
     },
   ],
   exports: [CLIENT_REPOSITORY, VEHICLE_REPOSITORY, USER_REPOSITORY],

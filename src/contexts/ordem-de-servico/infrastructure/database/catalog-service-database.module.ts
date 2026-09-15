@@ -1,27 +1,15 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { MongodbModule } from '../../../shared/infrastructure/database/mongodb/mongodb.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { CatalogServiceEntity } from '../../../shared/infrastructure/database/postgres/entities';
+import { TypeormCatalogServiceRepository } from '../../../shared/infrastructure/database/postgres/repositories/typeorm-catalog-service.repository';
 import { CATALOG_SERVICE_REPOSITORY } from '../../domain/repositories/catalog-service-repository.token';
-import {
-  CatalogServiceModel,
-  CatalogServiceSchema,
-} from './mongodb/models/catalog-service/catalog-service.model';
-import { MongodbCatalogServiceRepository } from './mongodb/repositories/mongodb-catalog-service-repository';
 
 @Module({
-  imports: [
-    MongodbModule,
-    MongooseModule.forFeature([
-      {
-        name: CatalogServiceModel.name,
-        schema: CatalogServiceSchema,
-      },
-    ]),
-  ],
+  imports: [TypeOrmModule.forFeature([CatalogServiceEntity])],
   providers: [
     {
       provide: CATALOG_SERVICE_REPOSITORY,
-      useClass: MongodbCatalogServiceRepository,
+      useClass: TypeormCatalogServiceRepository,
     },
   ],
   exports: [CATALOG_SERVICE_REPOSITORY],

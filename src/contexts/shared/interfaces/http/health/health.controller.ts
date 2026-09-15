@@ -3,7 +3,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   HealthCheck,
   HealthCheckService,
-  MongooseHealthIndicator,
+  TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
 
 @ApiTags('health')
@@ -11,7 +11,7 @@ import {
 export class HealthController {
   constructor(
     private readonly health: HealthCheckService,
-    private readonly mongoose: MongooseHealthIndicator,
+    private readonly database: TypeOrmHealthIndicator,
   ) {}
 
   @Get('live')
@@ -29,9 +29,9 @@ export class HealthController {
   @ApiOperation({
     summary: 'Readiness probe',
     description:
-      'Indica se a API está pronta para receber tráfego (MongoDB acessível).',
+      'Indica se a API está pronta para receber tráfego (PostgreSQL acessível).',
   })
   ready() {
-    return this.health.check([() => this.mongoose.pingCheck('mongodb')]);
+    return this.health.check([() => this.database.pingCheck('database')]);
   }
 }

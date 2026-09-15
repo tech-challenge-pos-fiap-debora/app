@@ -3,7 +3,7 @@
 /**
  * Configuração do agente APM. Carregado antes do bootstrap pelo
  * `node -r newrelic dist/main.js` definido no Dockerfile, pois a instrumentação
- * precisa envolver os módulos (http, express, mongodb) antes de eles serem exigidos.
+ * precisa envolver os módulos (http, express, pg) antes de eles serem exigidos.
  */
 exports.config = {
   app_name: [process.env.NEW_RELIC_APP_NAME || 'tech-challenge-api'],

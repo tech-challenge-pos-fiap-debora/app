@@ -9,10 +9,10 @@ services:
     ports:
       - '3000:3000'
     depends_on:
-      mongo:
+      postgres:
         condition: service_healthy
     environment:
-      - MONGO_URL=mongodb://mongo:27017/techChallenge
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/techchallenge
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1d}
       - SEED_ADMIN_EMAIL=${SEED_ADMIN_EMAIL:-admin@local.dev}
@@ -22,19 +22,23 @@ services:
       - .:/app
       - /app/node_modules
 
-  mongo:
-    image: mongo:7.0.21
-    container_name: mongo
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
     ports:
-      - '27017:27017'
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: techchallenge
     volumes:
-      - mongodbdata:/data/db
+      - postgresdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d techchallenge']
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
 
 volumes:
-  mongodbdata:
+  postgresdata:

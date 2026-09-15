@@ -25,10 +25,19 @@ jobs:
     name: Testes + build
     runs-on: ubuntu-latest
     services:
-      mongo:
-        image: mongo:7
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: techchallenge
         ports:
-          - 27017:27017
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d techchallenge"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -146,12 +155,12 @@ jobs:
           kubectl apply -f k8s/configmap.yaml
           kubectl apply -f k8s/secret.yaml
 
-      - name: Subir MongoDB
+      - name: Subir PostgreSQL
         run: |
-          kubectl apply -f k8s/mongo-pvc.yaml
-          kubectl apply -f k8s/mongo-service.yaml
-          kubectl apply -f k8s/mongo-deployment.yaml
-          kubectl rollout status deployment/mongo -n "$NAMESPACE" --timeout=180s
+          kubectl apply -f k8s/postgres-pvc.yaml
+          kubectl apply -f k8s/postgres-service.yaml
+          kubectl apply -f k8s/postgres-deployment.yaml
+          kubectl rollout status deployment/postgres -n "$NAMESPACE" --timeout=180s
 
       - name: Rodar migrations (Job)
         run: |
