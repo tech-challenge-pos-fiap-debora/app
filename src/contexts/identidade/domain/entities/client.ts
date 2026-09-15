@@ -1,11 +1,13 @@
 import { randomUUID } from 'crypto';
 import { DocumentVO } from '../../../shared/domain/value-objects/document.vo';
 import { EmailVO } from '../value-objects/email.vo';
+import { ClientStatus } from './client-status';
 
 export type ClientProps = {
   name: string;
   document: DocumentVO;
   email: EmailVO;
+  status: ClientStatus;
 };
 
 export class Client {
@@ -18,7 +20,12 @@ export class Client {
   }
 
   static create(
-    input: { name: string; document: string; email: string },
+    input: {
+      name: string;
+      document: string;
+      email: string;
+      status?: ClientStatus;
+    },
     id?: string,
   ): Client {
     return new Client(
@@ -26,6 +33,7 @@ export class Client {
         name: input.name,
         document: DocumentVO.parse(input.document),
         email: EmailVO.parse(input.email),
+        status: input.status ?? ClientStatus.ACTIVE,
       },
       id,
     );
@@ -43,8 +51,24 @@ export class Client {
     return this.props.email.value;
   }
 
+  get status() {
+    return this.props.status;
+  }
+
+  get active() {
+    return this.props.status === ClientStatus.ACTIVE;
+  }
+
   updateEmail(email: string) {
     this.props.email = EmailVO.parse(email);
+  }
+
+  deactivate() {
+    this.props.status = ClientStatus.INACTIVE;
+  }
+
+  activate() {
+    this.props.status = ClientStatus.ACTIVE;
   }
 
   toJSON() {
@@ -53,6 +77,7 @@ export class Client {
       name: this.props.name,
       document: this.props.document.value,
       email: this.props.email.value,
+      status: this.props.status,
     };
   }
 }

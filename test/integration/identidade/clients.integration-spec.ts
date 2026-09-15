@@ -36,6 +36,7 @@ describe('Clients (integration)', () => {
     expect([200, 201]).toContain(res.status);
     expect(res.body.id).toBeDefined();
     expect(res.body.document).toBe(body.document);
+    expect(res.body.status).toBe('ACTIVE');
   });
 
   it('GET /clients — lista inclui cliente criado', async () => {

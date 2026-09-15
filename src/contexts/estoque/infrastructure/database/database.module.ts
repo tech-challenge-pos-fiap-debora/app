@@ -1,43 +1,26 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { MongodbModule } from '../../../shared/infrastructure/database/mongodb/mongodb.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import {
-  ProductBatchModel,
-  ProductBatchSchema,
-} from './mongodb/models/product-batch/product-batch.model';
-import {
-  ProductModel,
-  ProductSchema,
-} from './mongodb/models/product/product.model';
-import { MongodbProductBatchRepository } from './mongodb/repositories/mongodb-product-batch-repository';
-import { MongodbProductRepository } from './mongodb/repositories/mongodb-product-repository';
+  ProductBatchEntity,
+  ProductEntity,
+} from '../../../shared/infrastructure/database/postgres/entities';
+import { TypeormProductBatchRepository } from '../../../shared/infrastructure/database/postgres/repositories/typeorm-product-batch.repository';
+import { TypeormProductRepository } from '../../../shared/infrastructure/database/postgres/repositories/typeorm-product.repository';
 import {
   PRODUCT_BATCH_REPOSITORY,
   PRODUCT_REPOSITORY,
 } from '../../domain/repositories/tokens';
 
 @Module({
-  imports: [
-    MongodbModule,
-    MongooseModule.forFeature([
-      {
-        name: ProductModel.name,
-        schema: ProductSchema,
-      },
-      {
-        name: ProductBatchModel.name,
-        schema: ProductBatchSchema,
-      },
-    ]),
-  ],
+  imports: [TypeOrmModule.forFeature([ProductEntity, ProductBatchEntity])],
   providers: [
     {
       provide: PRODUCT_REPOSITORY,
-      useClass: MongodbProductRepository,
+      useClass: TypeormProductRepository,
     },
     {
       provide: PRODUCT_BATCH_REPOSITORY,
-      useClass: MongodbProductBatchRepository,
+      useClass: TypeormProductBatchRepository,
     },
   ],
   exports: [PRODUCT_REPOSITORY, PRODUCT_BATCH_REPOSITORY],

@@ -1,9 +1,11 @@
 # Fase 2 — Infraestrutura e Deploy em Kubernetes
 
-Deploy da aplicação em um cluster **Kubernetes** local (**Kind**), com
-infraestrutura do cluster via **Terraform**, imagens multi-stage, **MongoDB**,
-**Job de migrations**, **Deployment** da API, **HPA**, health checks e
-pipeline **CI/CD** no GitHub Actions.
+> **Fase 3:** produção usa **EKS + RDS PostgreSQL**. Este documento descreve o Kind da Fase 2 (local). Ver [`docs/arquitetura.md`](../docs/arquitetura.md).
+
+Esta fase leva a aplicação da Fase 1 para um cluster **Kubernetes**, com
+infraestrutura provisionada por **Terraform**, imagens **Docker** multi-stage,
+**Job de migrations**, **Deployment** da API, **HorizontalPodAutoscaler (HPA)**,
+health checks e pipeline **CI/CD** no GitHub Actions.
 
 ## Regra desta fase
 

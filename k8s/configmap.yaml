@@ -9,7 +9,6 @@ metadata:
 data:
   NODE_ENV: production
   PORT: "3000"
-  MONGO_URL: mongodb://mongo:27017/techChallenge
   JWT_EXPIRES_IN: 1d
   SEED_ADMIN_EMAIL: admin@local.dev
   SEED_ADMIN_NAME: Admin

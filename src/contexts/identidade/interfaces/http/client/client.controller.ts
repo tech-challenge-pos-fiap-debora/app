@@ -41,6 +41,7 @@ export class ClientController {
       name: dto.name,
       document: dto.document,
       email: dto.email,
+      status: dto.status,
     });
     return ClientResponseDto.toDto(client);
   }
@@ -70,6 +71,7 @@ export class ClientController {
     const client = await this.updateClientUseCase.execute(document, {
       name: data.name,
       email: data.email,
+      status: data.status,
     });
     return ClientResponseDto.toDto(client);
   }

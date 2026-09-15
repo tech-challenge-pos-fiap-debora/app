@@ -7,6 +7,7 @@ import { randomBytes } from 'node:crypto';
 import { describe, expect, it } from '@jest/globals';
 import * as bcrypt from 'bcrypt';
 import { Client } from '../../../domain/entities/client';
+import { ClientStatus } from '../../../domain/entities/client-status';
 import { User } from '../../../domain/entities/user';
 import { UserRole } from '../../../domain/entities/user-role';
 import type { ClientRepositoryInterface } from '../../../domain/repositories/client.repository';
@@ -212,6 +213,29 @@ describe('Auth use cases', () => {
       email: user.email,
       role: UserRole.MECANICO,
     });
+  });
+
+  it('validate-user rejects JWT de cliente inativo', async () => {
+    const repo = new InMemoryUserRepository();
+    const clients = new InMemoryClientRepository();
+    const client = Client.create({
+      name: 'João',
+      document: '52998224725',
+      email: 'joao@test.com',
+      status: ClientStatus.INACTIVE,
+    });
+    await clients.create(client);
+
+    const useCase = new ValidateUserUseCase(repo, clients);
+    const payload: JwtPayload = {
+      sub: client.id,
+      email: client.email,
+      role: UserRole.CLIENTE,
+    };
+
+    await expect(useCase.execute(payload)).rejects.toBeInstanceOf(
+      UnauthorizedError,
+    );
   });
 
   it('validate-user accepts JWT de cliente existente', async () => {

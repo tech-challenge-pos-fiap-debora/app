@@ -1,5 +1,7 @@
 # Fase 1 — Aplicação (Oficina Mecânica / Ordem de Serviço)
 
+> **Fase 3:** produção usa **RDS PostgreSQL** (`DATABASE_URL`). Este documento descreve a Fase 1 original (MongoDB local). Ver [`docs/arquitetura.md`](../docs/arquitetura.md).
+
 API de oficina mecânica: ordens de serviço, clientes, veículos, catálogo, produtos, estoque e rotas públicas para orçamento/status. **NestJS**, **TypeScript**, **MongoDB**, **JWT** e **Swagger** em **`/api`**.
 
 > Esta é a documentação da **Fase 1** (a aplicação em si). O passo a passo de

@@ -1,5 +1,8 @@
 # Diagrama de Fluxo CI/CD
 
+> **Fase 3 (produção):** CI usa PostgreSQL; deploy na AWS via ECR + `infra-kubernetes`.
+> Os diagramas abaixo descrevem também o CD legado da Fase 2 (Kind + Mongo local).
+
 Baseado nos workflows reais do repositório:
 [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) e
 [`.github/workflows/cd.yml`](../../.github/workflows/cd.yml).

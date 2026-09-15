@@ -1,5 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { EntityNotFoundError } from '../../../shared/domain/errors';
+import {
+  BusinessRuleViolationError,
+  EntityNotFoundError,
+} from '../../../shared/domain/errors';
 import { Client } from '../../../identidade/domain/entities/client';
 import type { ClientRepositoryInterface } from '../../../identidade/domain/repositories/client.repository';
 import { CLIENT_REPOSITORY } from '../../../identidade/domain/repositories/tokens';
@@ -31,6 +34,9 @@ export class IdentidadeClientAdapter
   async getOrCreate(input: ProvisionClientInput): Promise<ClientSnapshot> {
     try {
       const existing = await this.clientRepo.findByDocument(input.document);
+      if (!existing.active) {
+        throw new BusinessRuleViolationError('Cliente inativo');
+      }
       return this.toSnapshot(existing);
     } catch (error) {
       if (!(error instanceof EntityNotFoundError)) {

@@ -1,6 +1,6 @@
 # Variante B — Fixtures da migration
 
-**Pré-requisito:** `yarn migrate:up` com o mesmo `MONGO_URL` que a API.
+**Pré-requisito:** `yarn migrate:up` com o mesmo `DATABASE_URL` que a API.
 
 **Antes:** login e contexto em [Fluxo feliz da API — índice](api-fluxo-url-body.md).
 

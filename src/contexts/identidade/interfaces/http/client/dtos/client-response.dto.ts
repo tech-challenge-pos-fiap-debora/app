@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 import type { Client } from '../../../../domain/entities/client';
+import { ClientStatus } from '../../../../domain/entities/client-status';
 
 export class ClientResponseDto {
   @ApiProperty({
@@ -34,6 +35,13 @@ export class ClientResponseDto {
   @IsNotEmpty()
   document: string;
 
+  @ApiProperty({
+    description: 'Situação do cliente',
+    enum: ClientStatus,
+    example: ClientStatus.ACTIVE,
+  })
+  status: ClientStatus;
+
   constructor(partial: Partial<ClientResponseDto>) {
     Object.assign(this, partial);
   }
@@ -44,6 +52,7 @@ export class ClientResponseDto {
       name: client.name,
       email: client.email,
       document: client.document,
+      status: client.status,
     });
   }
 }

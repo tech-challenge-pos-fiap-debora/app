@@ -23,10 +23,10 @@ describe('Health (integration)', () => {
     expect(res.body.status).toBe('ok');
   });
 
-  it('GET /health/ready — retorna status ok com MongoDB', async () => {
+  it('GET /health/ready — retorna status ok com PostgreSQL', async () => {
     const res = await request(app.getHttpServer()).get('/health/ready');
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
-    expect(res.body.info.mongodb.status).toBe('up');
+    expect(res.body.info.database.status).toBe('up');
   });
 });

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
+import { ClientStatus } from '../../../../domain/entities/client-status';
 
 export class UpdateClientDto {
   @ApiProperty({
@@ -17,4 +18,13 @@ export class UpdateClientDto {
   @IsEmail()
   @IsOptional()
   email?: string;
+
+  @ApiProperty({
+    description: 'Situação do cliente',
+    enum: ClientStatus,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(ClientStatus)
+  status?: ClientStatus;
 }

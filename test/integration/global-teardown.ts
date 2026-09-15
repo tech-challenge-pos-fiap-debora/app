@@ -1,11 +1,5 @@
-import mongoose from 'mongoose';
-import { INTEGRATION_MONGO_URL } from './helpers/mongo-url';
+import { resetIntegrationDatabase } from './helpers/reset-integration-database';
 
 export default async function globalTeardown(): Promise<void> {
-  try {
-    await mongoose.connect(INTEGRATION_MONGO_URL);
-    await mongoose.connection.dropDatabase();
-  } finally {
-    await mongoose.disconnect().catch(() => undefined);
-  }
+  await resetIntegrationDatabase().catch(() => undefined);
 }

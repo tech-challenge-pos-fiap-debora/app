@@ -59,7 +59,7 @@ FROM build AS migrations
 
 WORKDIR /usr/src/app
 
-CMD ["yarn", "migrate:up"]
+CMD ["node", "scripts/run-migrations.mjs"]
 
 
 # =========================
@@ -80,5 +80,5 @@ USER node
 
 EXPOSE 3000
 
-# O agente precisa ser carregado antes da aplicação para instrumentar http e mongodb.
+# O agente precisa ser carregado antes da aplicação para instrumentar http e pg.
 CMD ["node", "-r", "newrelic", "dist/main.js"]

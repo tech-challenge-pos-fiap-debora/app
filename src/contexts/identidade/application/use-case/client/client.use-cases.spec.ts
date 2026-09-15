@@ -42,6 +42,7 @@ class InMemoryClientRepository implements ClientRepositoryInterface {
         name: dataUpdate.name ?? current.name,
         document: current.document,
         email: dataUpdate.email ?? current.email,
+        status: current.status,
       },
       current.id,
     );
@@ -71,6 +72,7 @@ describe('Client use cases', () => {
       name: 'Joao Silva',
       document: '52998224725',
       email: 'joao@email.com',
+      status: 'ACTIVE',
     });
     expect(repository.clients.size).toBe(1);
   });

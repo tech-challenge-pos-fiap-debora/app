@@ -12,10 +12,9 @@ os manifestos da aplicação (em [`../k8s`](../k8s)) são aplicados.
 | `kubernetes_namespace.app` | `hashicorp/kubernetes` | Namespace `tech-challenge-namespace` da aplicação |
 | `kubectl_manifest.metrics_server` | `alekc/kubectl` | metrics-server (necessário para o Horizontal Pod Autoscaler) |
 
-> MongoDB, Job de migrations e API **só** rodam como workloads no cluster
-> Kubernetes (`kubectl apply` em [`../k8s`](../k8s)). Este módulo Terraform cria
-> o Kind, o namespace e o metrics-server — não sobe Compose nem processos da
-> aplicação no host.
+> **Legado Fase 2.** A Fase 3 usa RDS na AWS. O banco (Postgres no Kind) e a aplicação são provisionados pelos manifestos
+> em [`../k8s`](../k8s), não por este módulo. Aqui cuidamos apenas do cluster e
+> da base necessária para o deploy.
 
 ## Pré-requisitos
 

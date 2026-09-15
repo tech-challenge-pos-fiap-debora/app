@@ -7,7 +7,7 @@ export interface ClientRepositoryInterface {
   findByDocument: (document: string) => Promise<Client>;
   updateByDocument: (
     document: string,
-    dataUpdate: Partial<{ name: string; email: string }>,
+    dataUpdate: Partial<{ name: string; email: string; status: string }>,
   ) => Promise<Client>;
   remove: (document: string) => Promise<void>;
 }
