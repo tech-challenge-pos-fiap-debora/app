@@ -1,5 +1,7 @@
 # Diagrama de Infraestrutura — Kind + Kubernetes
 
+> **Legado (Fase 2).** A Fase 3 usa **EKS + RDS PostgreSQL**. Este diagrama descreve o Kind local.
+
 Desenho de solução do que o repositório **realmente provisiona**: cluster
 **Kind** via Terraform ([`infra/`](../../infra)) e workloads nos manifestos
 [`k8s/`](../../k8s). Usado localmente e no pipeline de CD.

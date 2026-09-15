@@ -23,6 +23,7 @@ const DEMO_CLIENT = {
   name: 'Cliente demo (migration)',
   document: '52998224725',
   email: 'cliente.demo@local.dev',
+  status: 'ACTIVE',
 };
 
 const DEMO_VEHICLE = {

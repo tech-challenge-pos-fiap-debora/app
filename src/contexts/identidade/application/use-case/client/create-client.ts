@@ -16,6 +16,7 @@ export class CreateClientUseCase {
       document: input.document,
       name: input.name,
       email: input.email,
+      status: input.status,
     });
 
     return this.clientRepo.create(user);

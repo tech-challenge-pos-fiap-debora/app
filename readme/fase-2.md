@@ -1,5 +1,7 @@
 # Fase 2 — Infraestrutura e Deploy em Kubernetes
 
+> **Fase 3:** produção usa **EKS + RDS PostgreSQL**. Este documento descreve o Kind + Mongo da Fase 2. Ver [`docs/arquitetura.md`](../docs/arquitetura.md).
+
 Esta fase leva a aplicação da Fase 1 para um cluster **Kubernetes**, com
 infraestrutura provisionada por **Terraform**, imagens **Docker** multi-stage,
 **Job de migrations**, **Deployment** da API, **HorizontalPodAutoscaler (HPA)**,

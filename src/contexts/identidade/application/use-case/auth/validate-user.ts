@@ -19,7 +19,7 @@ export class ValidateUserUseCase {
   async execute(payload: JwtPayload): Promise<JwtPayload> {
     if (payload.role === UserRole.CLIENTE) {
       const client = await this.clients.findById(payload.sub);
-      if (!client) {
+      if (!client?.active) {
         throw new UnauthorizedError('Unauthorized');
       }
 

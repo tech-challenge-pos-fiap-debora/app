@@ -12,7 +12,7 @@ os manifestos da aplicação (em [`../k8s`](../k8s)) são aplicados.
 | `kubernetes_namespace.app` | `hashicorp/kubernetes` | Namespace `tech-challenge-namespace` da aplicação |
 | `kubectl_manifest.metrics_server` | `alekc/kubectl` | metrics-server (necessário para o Horizontal Pod Autoscaler) |
 
-> O banco de dados (MongoDB) e a aplicação são provisionados pelos manifestos
+> **Legado Fase 2.** A Fase 3 usa RDS na AWS. O banco (MongoDB no Kind) e a aplicação são provisionados pelos manifestos
 > em [`../k8s`](../k8s), não por este módulo. Aqui cuidamos apenas do cluster e
 > da base necessária para o deploy.
 

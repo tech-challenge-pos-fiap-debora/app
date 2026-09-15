@@ -2,6 +2,7 @@ import { EntityNotFoundError } from '../../../../../shared/domain/errors';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Client } from '../../../../domain/entities/client';
+import { ClientStatus } from '../../../../domain/entities/client-status';
 import { DocumentVO } from '../../../../../shared/domain/value-objects/document.vo';
 import { EmailVO } from '../../../../domain/value-objects/email.vo';
 import { ClientRepositoryInterface } from '../../../../domain/repositories/client.repository';
@@ -19,6 +20,10 @@ export class MongodbClientRepository implements ClientRepositoryInterface {
         name: doc.name,
         email: doc.email,
         document: doc.document,
+        status:
+          doc.status === ClientStatus.INACTIVE
+            ? ClientStatus.INACTIVE
+            : ClientStatus.ACTIVE,
       },
       doc._id,
     );
@@ -30,6 +35,7 @@ export class MongodbClientRepository implements ClientRepositoryInterface {
       name: data.name,
       email: data.email,
       document: data.document,
+      status: data.status,
     });
     return this.toDomain(created);
   }
@@ -57,14 +63,15 @@ export class MongodbClientRepository implements ClientRepositoryInterface {
 
   async updateByDocument(
     document: string,
-    dataUpdate: Partial<{ name: string; email: string }>,
+    dataUpdate: Partial<{ name: string; email: string; status: string }>,
   ): Promise<Client> {
     const docKey = DocumentVO.parse(document).value;
-    const payload: { name?: string; email?: string } = {};
+    const payload: { name?: string; email?: string; status?: string } = {};
     if (dataUpdate.name !== undefined) payload.name = dataUpdate.name;
     if (dataUpdate.email !== undefined) {
       payload.email = EmailVO.parse(dataUpdate.email).value;
     }
+    if (dataUpdate.status !== undefined) payload.status = dataUpdate.status;
     const updated = await this.clientModel.findOneAndUpdate(
       { document: docKey },
       { $set: { ...payload, updatedAt: new Date() } },

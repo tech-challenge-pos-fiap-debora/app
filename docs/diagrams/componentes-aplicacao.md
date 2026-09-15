@@ -53,7 +53,7 @@ flowchart TB
         end
     end
 
-    Mongo[("MongoDB (Mongoose)")]
+    PG[("PostgreSQL RDS")]
 
     Client --> Auth
     Client --> Clients
@@ -69,9 +69,9 @@ flowchart TB
     Adapters -.->|consulta produtos| Estoque
     ServiceOrder --> Catalog
 
-    Identidade --> Mongo
-    Estoque --> Mongo
-    Ordem --> Mongo
+    Identidade --> PG
+    Estoque --> PG
+    Ordem --> PG
 ```
 
 ## Camadas por contexto (Clean Architecture)
@@ -82,7 +82,7 @@ flowchart LR
         Interfaces["interfaces (HTTP: controllers, DTOs, validators)"]
         Application["application (use-cases)"]
         Domain["domain (entities, value-objects, repositories, ports, services)"]
-        Infrastructure["infrastructure (Mongoose repositories, IoC)"]
+        Infrastructure["infrastructure (repositórios SQL, IoC)"]
     end
 
     Interfaces --> Application

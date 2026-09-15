@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { ClientStatus } from '../../../../domain/entities/client-status';
 import { IsCPFOrCNPJ } from '../../../../../shared/interfaces/http/validators/is-cpf-or-cnpj.validator';
 
 export class CreateClientDto {
@@ -26,4 +27,14 @@ export class CreateClientDto {
   @IsNotEmpty()
   @IsCPFOrCNPJ()
   document: string;
+
+  @ApiProperty({
+    description: 'Situação do cliente. Inativo não recebe JWT nem abre OS.',
+    enum: ClientStatus,
+    required: false,
+    default: ClientStatus.ACTIVE,
+  })
+  @IsOptional()
+  @IsEnum(ClientStatus)
+  status?: ClientStatus;
 }

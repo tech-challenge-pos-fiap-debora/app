@@ -33,6 +33,14 @@ export class ClientModel {
   email: string;
 
   @Prop({
+    type: String,
+    required: true,
+    enum: ['ACTIVE', 'INACTIVE'],
+    default: 'ACTIVE',
+  })
+  status: string;
+
+  @Prop({
     type: Date,
   })
   createdAt: Date;
